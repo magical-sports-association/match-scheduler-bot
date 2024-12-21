@@ -8,7 +8,7 @@ import click
 import os.path
 import time
 
-from . import LOGGER, setup_logging
+from . import LOGGER, setup_logging, setup_bot
 
 
 def slow_task():
@@ -33,6 +33,7 @@ def matchschedulerbot(bot_config, log_config):
     click.echo(f"Grabbing bot config from: {bot_config}")
     click.echo(f"Grabbing logging config from: {log_config}")
     setup_logging(log_config)
+    setup_bot(bot_config)
     LOGGER.info("Application successfully initialized. Starting slow task")
     time.sleep(3)
     slow_task()
