@@ -7,17 +7,24 @@
     }
   },
   "handlers": {
-    "stdout": {
+    "stderr": {
       "class": "logging.StreamHandler",
       "formatter": "simple",
-      "stream": "ext://sys.stdout"
+      "stream": "ext://sys.stderr"
+    },
+    "queue_handler": {
+      "class": "logging.handlers.QueueHandler",
+      "respect_handler_level": true,
+      "handlers": [
+        "stderr"
+      ]
     }
   },
   "loggers": {
     "root": {
       "level": "DEBUG",
       "handlers": [
-        "stdout"
+        "queue_handler"
       ]
     }
   }
