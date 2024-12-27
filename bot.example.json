@@ -1,6 +1,12 @@
 {
   "auth": {
-    "token": "REPLACEME"
+    "token": "REPLACEME",
+    "intents": {
+      "guilds": true,
+      "guild_messages": true,
+      "members": true,
+      "message_content": true
+    }
   },
   "roles": {
     "staff": "STAFFROLEID",

@@ -5,13 +5,14 @@
 """
 
 import pydantic
-from typing import List
+from typing import List, Dict
 from typing_extensions import Annotated
 import pathlib
 
 
 class BotAuthInfo(pydantic.BaseModel):
     token: pydantic.SecretStr
+    intents: Dict[str, bool]
 
 
 class RolesList(pydantic.BaseModel):
