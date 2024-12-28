@@ -5,10 +5,13 @@
 '''
 
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Dict
 import logging
 
-from ..exceptions import BotConfigurationError
+from ..exceptions import (
+    BadConfigurationError,
+    MissingConfigurationError
+)
 from .config import (
     BotConfig
 )
@@ -43,14 +46,14 @@ class ActiveConfig:
                 return config
         except FileNotFoundError as err:
             LOGGER.error('Config file `%s` does not exist', config_file)
-            raise BotConfigurationError(
+            raise MissingConfigurationError(
                 f'No such configuration file: {config_file}'
             ) from err
         except pydantic.ValidationError as err:
             LOGGER.error(
                 'Config file does not conform to config structure'
             )
-            raise BotConfigurationError(
+            raise BadConfigurationError(
                 f'Bad configuration read: {err.error_count()} issues'
             ) from err
 
@@ -58,7 +61,7 @@ class ActiveConfig:
     def instance_or_err(cls):
         if cls._instance is None:
             LOGGER.error('No active configuration available')
-            raise BotConfigurationError(
+            raise MissingConfigurationError(
                 'No active configuration available'
             )
         LOGGER.info('Returning available configuration for bot')

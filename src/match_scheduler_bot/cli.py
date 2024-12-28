@@ -6,15 +6,13 @@
 
 import click
 import os.path
-import time
 
-from . import LOGGER, setup_logging, setup_bot
-
-
-def slow_task():
-    for x in range(1, 11):
-        time.sleep(5)
-        LOGGER.debug("Step %d of some slow task completed", x)
+from . import (
+    setup_logging,
+    setup_config,
+)
+from .model import ActiveConfig
+from .bot import setup_bot
 
 
 @click.command()
@@ -30,12 +28,9 @@ def slow_task():
 )
 def matchschedulerbot(bot_config, log_config):
     """Entry point to matchschedulerbot"""
-    click.echo(f"Grabbing bot config from: {bot_config}")
-    click.echo(f"Grabbing logging config from: {log_config}")
     setup_logging(log_config)
-    setup_bot(bot_config)
-    LOGGER.info("Application successfully initialized. Starting slow task")
-    time.sleep(3)
-    slow_task()
-    time.sleep(3)
-    LOGGER.info("Slow task completed. Exiting...")
+    setup_config(bot_config)
+    setup_bot().run(
+        token=ActiveConfig.instance_or_err().access_token.get_secret_value(),
+        log_handler=None
+    )

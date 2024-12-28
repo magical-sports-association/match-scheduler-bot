@@ -10,9 +10,7 @@ import logging.handlers
 import json
 import atexit
 
-import pydantic
-
-from .model.config import BotConfig
+from .model import ActiveConfig
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,11 +26,5 @@ def setup_logging(config: str) -> None:
         atexit.register(qhandler.listener.stop)
 
 
-def setup_bot(config: str) -> None:
-    with open(config) as f_in:
-        try:
-            botconfig = json.load(f_in)
-            BotConfig.model_validate(botconfig, strict=True)
-            print(json.dumps(botconfig, indent=4))
-        except pydantic.ValidationError as e:
-            print(e)
+def setup_config(config: str) -> None:
+    ActiveConfig(config)
