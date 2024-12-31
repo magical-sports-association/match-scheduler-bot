@@ -19,3 +19,15 @@ class MissingConfigurationError(BotConfigurationError):
 
 class BadConfigurationError(BotConfigurationError):
     '''Exception to indicate an issue with reading the bot configuration'''
+
+
+class MatchSchedulingException(MatchSchedulerBotException):
+    '''Exception indicating an issue when attempting to schedule a match'''
+
+
+class InvalidStartTimeGiven(MatchSchedulingException):
+    '''Excpetion indicating an issue with the provided start time'''
+
+
+class InvalidTimezoneSpecified(MatchSchedulingException):
+    '''Exception indicating an issue with the provided timezone name'''

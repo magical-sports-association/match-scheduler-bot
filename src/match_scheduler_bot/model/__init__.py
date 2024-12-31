@@ -74,3 +74,7 @@ class ActiveConfig:
     @property
     def intents_mapping(self) -> Dict[str, bool]:
         return self.config.auth.intents
+
+    @property
+    def dbpath(self) -> str:
+        return self.config.storage.database
