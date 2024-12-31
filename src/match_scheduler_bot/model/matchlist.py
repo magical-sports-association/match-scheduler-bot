@@ -6,7 +6,8 @@
 
 import pydantic
 from typing_extensions import Annotated
-from typing import List
+
+import time
 import sqlite3
 
 
@@ -23,11 +24,16 @@ class MatchListRepository:
         self._conn = sqlite3.connect(dbpath)
         self._create_matchlist_table()
 
-    def find_match(self, start_time, home, away) -> ScheduledMatch:
-        pass
-
-    def find_matches(self) -> List[ScheduledMatch]:
-        pass
+    def find_matches(self) -> sqlite3.Cursor:
+        return self._conn.execute(
+            '''
+            SELECT * FROM matches
+            WHERE start_time > ?
+            ORDER BY start_time ASC
+            LIMIT 10
+            ''',
+            (int(time.time()),)
+        )
 
     def schedule_match(self, match: ScheduledMatch) -> None:
         self._conn.execute(
@@ -43,8 +49,14 @@ class MatchListRepository:
             match.model_dump()
         )
 
-    def cancel_match(self, match: ScheduledMatch) -> None:
-        pass
+    def cancel_match(self, home: int, away: int) -> sqlite3.Cursor:
+        return self._conn.execute(
+            '''
+            DELETE FROM MATCHES
+            WHERE home_team = ? AND away_team = ?;
+            ''',
+            (home, away)
+        )
 
     def _create_matchlist_table(self) -> None:
         self._conn.execute(
@@ -54,7 +66,8 @@ class MatchListRepository:
                     home_team BIG INT,
                     away_team BIG INT,
                     scheduled_at BIG INT,
-                    scheduled_by BIG INT
+                    scheduled_by BIG INT,
+                    PRIMARY KEY (home_team, away_team)
                 );
             '''
         )
@@ -63,4 +76,7 @@ class MatchListRepository:
         return self
 
     def __exit__(self, exc_type, exc_val, traceback):
-        pass
+        if exc_type:
+            self._conn.rollback()
+        else:
+            self._conn.commit()

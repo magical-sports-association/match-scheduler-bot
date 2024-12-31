@@ -116,58 +116,58 @@ def setup_bot():
         await interaction.response.send_message('Scheduling successful', ephemeral=True)
 
     @bot.tree.command(name='delmatch')
-    async def del_match(interaction: discord.Interaction, home: str, away: str):
+    async def del_match(interaction: discord.Interaction, home: discord.Role, away: discord.Role):
+        LOGGER.info('Canceling the match: %s vs %s', away.name, home.name)
+        with matchlist as db:
+            if db.cancel_match(home.id, away.id).rowcount:
+                await _issue_cancellation_confirmation_message(interaction)
+            else:
+                await _issue_cancellation_failure_message(interaction)
+
+    async def _issue_cancellation_confirmation_message(interaction: discord.Interaction):
         await interaction.response.send_message(
-            f'Canceling the match between {away} vs {home}'
+            'Cancellation successful', ephemeral=True
+        )
+
+    async def _issue_cancellation_failure_message(interaction: discord.Interaction):
+        await interaction.response.send_message(
+            'Cancellation failed', ephemeral=True
         )
 
     @bot.tree.command(name='showmatches')
-    async def show_matches(interaction: discord.Interaction, team: discord.Role):
+    async def show_matches(interaction: discord.Interaction):
+        with matchlist as db:
+            if db.find_matches().rowcount:
+                await _issue_match_schedule_message(interaction, db.find_matches())
+            else:
+                await _issue_empty_schedule_message(interaction)
+
+    async def _issue_empty_schedule_message(interaction: discord.Interaction):
         await interaction.response.send_message(
-            f'Showing the upcoming matches with {team.mention}'
+            'No matches scheduled', ephemeral=True
         )
 
-    '''
-    @bot.tree.command(name='domath')
-    async def do_math(interaction: discord.Interaction, a: int, op: str, b: int):
-        LOGGER.info('/domath command invoked')
-        match op:
-            case '+':
-                LOGGER.debug('+ operator detected! computing sum...')
-                await interaction.response.send_message(
-                    f'{a} + {b} = {a + b}'
-                )
-            case '-':
-                LOGGER.debug('- operator detected! computing difference...')
-                await interaction.response.send_message(
-                    f'{a} - {b} = {a - b}'
-                )
-            case '*':
-                LOGGER.debug('* operator detected! computing product...')
-                await interaction.response.send_message(
-                    f'{a} * {b} = {a * b}'
-                )
+    async def _issue_match_schedule_message(interaction: discord.Interaction, matches):
+        def row_to_match(r) -> ScheduledMatch:
+            return ScheduledMatch(
+                scheduled_timestamp=r[0],
+                away_team=r[1],
+                home_team=r[2],
+                scheduled_at=r[3],
+                scheduled_by=r[4]
+            )
 
-            case '/':
-                LOGGER.debug('/ operator detected! computing quotient...')
-                await interaction.response.send_message(
-                    f'{a} / {b} = {a / b}'
-                )
-            case _:
-                LOGGER.error('Unknown operator detected! raising exception')
-                raise ValueError(f'Unknown operator: {op}')
+        msg = "# Upcoming matches:\n"
 
-    @do_math.error
-    async def math_errors(interaction: discord.Interaction, error: Exception):
-        LOGGER.error('An error occured: %s', str(error))
+        for match in map(row_to_match, matches.fetchall()):
+            msg += "- {} vs {} @ {}\n".format(
+                interaction.guild.get_role(match.away_team).mention,
+                interaction.guild.get_role(match.home_team).mention,
+                f'<t:{match.scheduled_timestamp}:F>'
+            )
 
         await interaction.response.send_message(
-            'The command failed!'
+            msg, ephemeral=True
         )
-
-    @bot.tree.command(name='asciifor')
-    async def ascii_for(interaction: discord.Interaction, character: AsciiTransformer):
-        await interaction.response.send_message(character)
-    '''
 
     return bot
