@@ -31,3 +31,11 @@ class InvalidStartTimeGiven(MatchSchedulingException):
 
 class InvalidTimezoneSpecified(MatchSchedulingException):
     '''Exception indicating an issue with the provided timezone name'''
+
+
+class DuplicatedMatchDetected(MatchSchedulingException):
+    '''Exception indicating a match involving the given teams already exists'''
+
+
+class MatchNotInsertedToSchedule(MatchSchedulingException):
+    '''Exception indicating a match insertion failed due to a database issue'''

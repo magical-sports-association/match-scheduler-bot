@@ -4,11 +4,20 @@
     :module_author: CountTails
 """
 
-import pydantic
-from typing_extensions import Annotated
-
+import logging
 import time
 import sqlite3
+from typing_extensions import Annotated
+
+import pydantic
+
+from ..exceptions import (
+    DuplicatedMatchDetected,
+    MatchNotInsertedToSchedule,
+)
+
+
+__LOGGER__ = logging.getLogger(__name__)
 
 
 class ScheduledMatch(pydantic.BaseModel):
@@ -36,18 +45,29 @@ class MatchListRepository:
         )
 
     def schedule_match(self, match: ScheduledMatch) -> None:
-        self._conn.execute(
-            '''
-                INSERT INTO matches VALUES(
-                    :scheduled_timestamp,
-                    :away_team,
-                    :home_team,
-                    :scheduled_at,
-                    :scheduled_by
-                );
-            ''',
-            match.model_dump()
-        )
+        try:
+            self._conn.execute(
+                '''
+                    INSERT INTO matches VALUES(
+                        :scheduled_timestamp,
+                        :away_team,
+                        :home_team,
+                        :scheduled_at,
+                        :scheduled_by
+                    );
+                ''',
+                match.model_dump()
+            )
+        except sqlite3.OperationalError as err:
+            __LOGGER__.error(err)
+            raise MatchNotInsertedToSchedule(
+                'A database error prevented insertion'
+            ) from err
+        except sqlite3.IntegrityError as err:
+            __LOGGER__.error(err)
+            raise DuplicatedMatchDetected(
+                'A match is already scheduled'
+            )
 
     def cancel_match(self, home: int, away: int) -> sqlite3.Cursor:
         return self._conn.execute(
@@ -76,7 +96,7 @@ class MatchListRepository:
         return self
 
     def __exit__(self, exc_type, exc_val, traceback):
-        if exc_type:
+        if exc_val:
             self._conn.rollback()
         else:
             self._conn.commit()

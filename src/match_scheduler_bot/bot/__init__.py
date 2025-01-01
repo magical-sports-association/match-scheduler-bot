@@ -6,7 +6,6 @@
 
 import logging
 import datetime
-import sqlite3
 
 import discord
 from discord.ext import commands
@@ -16,6 +15,13 @@ from ..model.matchlist import MatchListRepository, ScheduledMatch
 from ..exceptions import MatchSchedulingException
 from .autocomplete import autocomplete_timezone
 from .validators import date_parts
+from .responses import (
+    make_scheduling_success_message,
+    make_scheduling_failure_message,
+    make_cancellation_success_message,
+    make_cancellation_failure_message,
+    make_match_calendar_message
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -83,89 +89,69 @@ def setup_bot():
             with matchlist as db:
                 db.schedule_match(match_to_schedule)
 
-            LOGGER.info('Match scheduled successfully')
-
-        except sqlite3.OperationalError as err:
-            LOGGER.error(
-                'Match could not be scheduled: %s',
-                str(err)
-            )
-            await _issue_scheduling_failure_message(interaction)
-        except sqlite3.IntegrityError as err:
-            LOGGER.error(
-                'Match already in match list: %s',
-                str(err)
-            )
-            await _issue_scheduling_failure_message(interaction)
         except MatchSchedulingException as err:
             LOGGER.error(
                 'Match could not be scheduled: %s',
                 str(err)
             )
-            await _issue_scheduling_failure_message(interaction)
+            await interaction.response.send_message(
+                embed=make_scheduling_failure_message(
+                    interaction,
+                    err
+                ),
+                ephemeral=True
+            )
         else:
-            await _issue_scheduling_confirmation_message(interaction)
-
-    async def _issue_scheduling_failure_message(interaction: discord.Interaction):
-        await interaction.response.send_message('Scheduling failed', ephemeral=True)
-
-    async def _issue_scheduling_confirmation_message(interaction: discord.Interaction):
-        await interaction.response.send_message('Scheduling successful', ephemeral=True)
+            LOGGER.info('Match scheduled successfully')
+            await interaction.response.send_message(
+                embed=make_scheduling_success_message(
+                    interaction,
+                    match_to_schedule
+                ),
+                ephemeral=True
+            )
 
     @bot.tree.command(name='delmatch')
-    async def del_match(interaction: discord.Interaction, home: discord.Role, away: discord.Role):
+    @discord.app_commands.describe(
+        home='The home team participant in the match to cancel',
+        away='The away team participant in the match to cancel'
+    )
+    async def del_match(
+            interaction: discord.Interaction,
+            home: discord.Role,
+            away: discord.Role
+    ):
         LOGGER.info('Canceling the match: %s vs %s', away.name, home.name)
         with matchlist as db:
-            if db.cancel_match(home.id, away.id).rowcount:
-                await _issue_cancellation_confirmation_message(interaction)
+            if db.cancel_match(home.id, away.id).rowcount > 0:
+                await interaction.response.send_message(
+                    embed=make_cancellation_success_message(
+                        interaction,
+                        home,
+                        away
+                    ),
+                    ephemeral=True
+                )
             else:
-                await _issue_cancellation_failure_message(interaction)
-
-    async def _issue_cancellation_confirmation_message(interaction: discord.Interaction):
-        await interaction.response.send_message(
-            'Cancellation successful', ephemeral=True
-        )
-
-    async def _issue_cancellation_failure_message(interaction: discord.Interaction):
-        await interaction.response.send_message(
-            'Cancellation failed', ephemeral=True
-        )
+                await interaction.response.send_message(
+                    embed=make_cancellation_failure_message(
+                        interaction,
+                        home,
+                        away
+                    ),
+                    ephemeral=True
+                )
 
     @bot.tree.command(name='showmatches')
     async def show_matches(interaction: discord.Interaction):
         with matchlist as db:
             matches = db.find_matches()
-            if matches.rowcount:
-                await _issue_match_schedule_message(interaction, matches)
-            else:
-                await _issue_empty_schedule_message(interaction)
-
-    async def _issue_empty_schedule_message(interaction: discord.Interaction):
-        await interaction.response.send_message(
-            'No matches scheduled', ephemeral=True
-        )
-
-    async def _issue_match_schedule_message(interaction: discord.Interaction, matches):
-        def row_to_match(r) -> ScheduledMatch:
-            return ScheduledMatch(
-                scheduled_timestamp=r[0],
-                away_team=r[1],
-                home_team=r[2],
-                scheduled_at=r[3],
-                scheduled_by=r[4]
+            await interaction.response.send_message(
+                embed=make_match_calendar_message(
+                    interaction,
+                    matches
+                ),
+                ephemeral=True
             )
-
-        msg = "# Upcoming matches:\n"
-
-        for match in map(row_to_match, matches.fetchall()):
-            msg += "- {} vs {} @ {}\n".format(
-                interaction.guild.get_role(match.away_team).mention,
-                interaction.guild.get_role(match.home_team).mention,
-                f'<t:{match.scheduled_timestamp}:F>'
-            )
-
-        await interaction.response.send_message(
-            msg, ephemeral=True
-        )
 
     return bot
