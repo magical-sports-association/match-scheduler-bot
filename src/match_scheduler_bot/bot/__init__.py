@@ -14,10 +14,8 @@ from discord.ext import commands
 from ..model import ActiveConfig
 from ..model.matchlist import MatchListRepository, ScheduledMatch
 from ..exceptions import MatchSchedulingException
-from .utils import (
-    fuzzytzkeys,
-    validate_start_time
-)
+from .autocomplete import autocomplete_timezone
+from .validators import date_parts
 
 
 LOGGER = logging.getLogger(__name__)
@@ -48,7 +46,7 @@ def setup_bot():
         timezone='The timezone identifier used to localize the provide date/time info'
     )
     @discord.app_commands.autocomplete(
-        timezone=fuzzytzkeys
+        timezone=autocomplete_timezone
     )
     async def add_match(
         interaction: discord.Interaction,
@@ -62,8 +60,7 @@ def setup_bot():
         timezone: str
     ):
         try:
-            LOGGER.debug('Validating start time parameters')
-            match_start: datetime.datetime = validate_start_time(
+            match_start: datetime.datetime = date_parts(
                 year=year,
                 month=month,
                 day=day,
