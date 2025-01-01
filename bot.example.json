@@ -8,39 +8,8 @@
       "message_content": true
     }
   },
-  "roles": {
-    "staff": "STAFFROLEID",
-    "captain": "CAPTAINROLEID",
-    "subscriber": "SUBSCRIBERROLEID"
-  },
-  "permissions": {
-    "addmatch": [
-      "staff",
-      "captain"
-    ],
-    "cancelmatch": [
-      "staff",
-      "captain"
-    ],
-    "showmatches": [
-      "staff",
-      "captain",
-      "subscriber"
-    ]
-  },
-  "commands": {
-    "addmatch": {
-      "earliest": 86400,
-      "latest": 1209600
-    },
-    "cancelmatch": {
-      "latest": 10800
-    },
-    "showmatches": {
-      "limit": 10
-    }
-  },
   "storage": {
-    "database": ":memory:"
+    "database": "match.db",
+    "logs": 1323869309537091594
   }
 }
