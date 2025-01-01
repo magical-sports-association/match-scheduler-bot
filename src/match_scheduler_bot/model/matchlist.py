@@ -40,8 +40,8 @@ class MatchListRepository:
             '''
                 INSERT INTO matches VALUES(
                     :scheduled_timestamp,
-                    :home_team,
                     :away_team,
+                    :home_team,
                     :scheduled_at,
                     :scheduled_by
                 );
@@ -63,8 +63,8 @@ class MatchListRepository:
             '''
                 CREATE TABLE IF NOT EXISTS matches (
                     start_time BIG INT,
-                    home_team BIG INT,
                     away_team BIG INT,
+                    home_team BIG INT,
                     scheduled_at BIG INT,
                     scheduled_by BIG INT,
                     PRIMARY KEY (home_team, away_team)

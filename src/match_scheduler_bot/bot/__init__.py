@@ -137,8 +137,9 @@ def setup_bot():
     @bot.tree.command(name='showmatches')
     async def show_matches(interaction: discord.Interaction):
         with matchlist as db:
-            if db.find_matches().rowcount:
-                await _issue_match_schedule_message(interaction, db.find_matches())
+            matches = db.find_matches()
+            if matches.rowcount:
+                await _issue_match_schedule_message(interaction, matches)
             else:
                 await _issue_empty_schedule_message(interaction)
 
