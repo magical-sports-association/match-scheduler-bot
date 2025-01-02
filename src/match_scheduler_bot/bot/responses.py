@@ -21,12 +21,11 @@ def make_scheduling_success_message(
     match: ScheduledMatch
 ) -> discord.Embed:
     msg = discord.Embed(
-        title='Match scheduled successfuly',
-        description=f'A match has been scheduled by {interaction.user.name}',
+        title='Match scheduled successfully!',
         color=discord.Color.green()
     )
     msg.add_field(
-        name='Success!',
+        name='',
         value='You have successfully scheduled a match'
     )
     msg.set_footer(
@@ -45,8 +44,14 @@ def make_scheduling_failure_message(
         color=discord.Color.red()
     )
     msg.add_field(
-        name='Error',
-        value=f'{error}'.removeprefix(f'{error.__class__.__name__}:')
+        name='',
+        value=f'Error: {error}'.removeprefix(f'{error.__class__.__name__}:'),
+        inline=False
+    )
+    msg.add_field(
+        name='',
+        value='To schedule a match between these two teams, delete the existing one first.',
+        inline=False
     )
     msg.set_footer(
         text='If you continue to experience issues scheduling a match, please alert staff'
@@ -61,11 +66,10 @@ def make_cancellation_success_message(
 ) -> discord.Embed:
     msg = discord.Embed(
         title='Match cancelled successfully',
-        description=f'A match has been cancelled by {interaction.user.name}',
         color=discord.Color.green()
     )
     msg.add_field(
-        name='Success!',
+        name='',
         value='You have successfully cancelled the match between {} and {}'.format(
             away.name,
             home.name
@@ -84,12 +88,12 @@ def make_cancellation_failure_message(
 ) -> discord.Embed:
     msg = discord.Embed(
         title='Match unabled to be cancelled',
-        description='There was a problem concelling the match',
+        description='There was a problem cancelling the match',
         color=discord.Color.red()
     )
     msg.add_field(
-        name='Error',
-        value='It is likely the match you are attempting to cancel ({} vs {}) does not exist'.format(
+        name='',
+        value='Error: It is likely the match you are attempting to cancel ({} vs {}) does not exist'.format(
             away.name,
             home.name
         )
@@ -104,6 +108,7 @@ def make_match_calendar_message(
     interaction: discord.Interaction,
     matches: sqlite3.Cursor
 ) -> discord.Embed:
+    # FIXME: find a way to move this to db repo
     def row_to_match(r) -> ScheduledMatch:
         return ScheduledMatch(
             scheduled_timestamp=r[0],
@@ -114,24 +119,26 @@ def make_match_calendar_message(
         )
 
     msg = discord.Embed(
-        title='Upcoming matches',
-        description='A calendar of upcoming scheduled matches',
+        title='Scheduled matches',
+        description='Here\'s a schedule of upcoming matches',
         color=discord.Color.blue()
     )
-    if matches.rowcount == 0:
-        msg.set_footer(
-            text='No matches scheduled. Schedule one with `/addmatch`!'
+    has_matches = False
+    for match in map(row_to_match, matches.fetchall()):
+        msg.add_field(
+            name='',
+            value='- __{}__ vs __{}__ @ {}'.format(
+                interaction.guild.get_role(match.away_team).name,
+                interaction.guild.get_role(match.home_team).name,
+                f'<t:{match.scheduled_timestamp}:f>'
+            ),
+            inline=False
         )
+        has_matches = True
     else:
-        for idx, match in enumerate(map(row_to_match, matches.fetchall()), start=1):
-            msg.add_field(
-                name=f'{idx}',
-                value='{} vs {} @ {}'.format(
-                    interaction.guild.get_role(match.away_team).name,
-                    interaction.guild.get_role(match.home_team).name,
-                    f'<t:{match.scheduled_timestamp}:f>'
-                ),
-                inline=False
+        if not has_matches:
+            msg.set_footer(
+                text='There are no matches scheduled. Add one using `/addmatch`!'
             )
 
     return msg
