@@ -10,7 +10,7 @@ import logging.handlers
 import json
 import atexit
 
-from .model import ActiveConfig
+from .model import use_config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -27,4 +27,4 @@ def setup_logging(config: str) -> None:
 
 
 def setup_config(config: str) -> None:
-    ActiveConfig(config)
+    use_config(config)

@@ -11,7 +11,7 @@ from . import (
     setup_logging,
     setup_config,
 )
-from .model import ActiveConfig
+from .model import get_config
 from .bot import setup_bot
 
 
@@ -31,6 +31,6 @@ def matchschedulerbot(bot_config, log_config):
     setup_logging(log_config)
     setup_config(bot_config)
     setup_bot().run(
-        token=ActiveConfig.instance_or_err().access_token.get_secret_value(),
+        token=get_config().auth.token.get_secret_value(),
         log_handler=None
     )

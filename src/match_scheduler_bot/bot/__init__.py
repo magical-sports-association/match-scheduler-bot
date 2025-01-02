@@ -10,7 +10,7 @@ import datetime
 import discord
 from discord.ext import commands
 
-from ..model import ActiveConfig
+from ..model import get_config
 from ..model.matchlist import MatchListRepository, ScheduledMatch
 from ..exceptions import MatchSchedulingException
 from .autocomplete import autocomplete_timezone
@@ -31,10 +31,10 @@ def setup_bot():
     bot = commands.Bot(
         command_prefix=commands.when_mentioned_or('!'),
         intents=discord.Intents(
-            **ActiveConfig.instance_or_err().intents_mapping
+            **get_config().auth.intents
         )
     )
-    matchlist = MatchListRepository(ActiveConfig.instance_or_err().dbpath)
+    matchlist = MatchListRepository(get_config().storage.database)
 
     @bot.event
     async def on_ready():

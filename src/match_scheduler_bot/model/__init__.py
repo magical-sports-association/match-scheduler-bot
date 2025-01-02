@@ -5,7 +5,7 @@
 '''
 
 from pathlib import Path
-from typing import Dict
+from typing import Optional
 import logging
 
 from ..exceptions import (
@@ -19,62 +19,42 @@ from .config import (
 import pydantic
 
 LOGGER = logging.getLogger(__name__)
+__CONFIG__: Optional[BotConfig] = None
 
 
-class ActiveConfig:
-    _instance = None
-
-    def __new__(cls, config: str | Path):
-        if cls._instance is None:
-            cls._instance = super(ActiveConfig, cls).__new__(cls)
-            cls._instance.config = cls.from_file(config)
-        return cls._instance
-
-    @staticmethod
-    def from_file(config_file: str | Path):
-        try:
-            LOGGER.debug('Opening config file: %s', config_file)
-            with open(config_file) as f_in:
-                LOGGER.debug(
-                    'Validating JSON structure conforms to config'
-                )
-                config = BotConfig.model_validate_json(
-                    f_in.read(),
-                    strict=True
-                )
-                LOGGER.debug('JSON structure is conforming')
-                return config
-        except FileNotFoundError as err:
-            LOGGER.error('Config file `%s` does not exist', config_file)
-            raise MissingConfigurationError(
-                f'No such configuration file: {config_file}'
-            ) from err
-        except pydantic.ValidationError as err:
-            LOGGER.error(
-                'Config file does not conform to config structure'
+def use_config(config: str | Path) -> None:
+    global __CONFIG__
+    try:
+        LOGGER.debug('Opening config file: %s', config)
+        with open(config) as f_in:
+            LOGGER.debug(
+                'Validating JSON structure conforms to config'
             )
-            raise BadConfigurationError(
-                f'Bad configuration read: {err.error_count()} issues'
-            ) from err
-
-    @classmethod
-    def instance_or_err(cls):
-        if cls._instance is None:
-            LOGGER.error('No active configuration available')
-            raise MissingConfigurationError(
-                'No active configuration available'
+            config = BotConfig.model_validate_json(
+                f_in.read(),
+                strict=True
             )
-        LOGGER.info('Returning available configuration for bot')
-        return cls._instance
+            LOGGER.debug('JSON structure is conforming')
+            __CONFIG__ = config
+    except FileNotFoundError as err:
+        LOGGER.error('Config file `%s` does not exist', config)
+        raise MissingConfigurationError(
+            f'No such configuration file: {config}'
+        ) from err
+    except pydantic.ValidationError as err:
+        LOGGER.error(
+            'Config file does not conform to config structure'
+        )
+        raise BadConfigurationError(
+            f'Bad configuration read: {err.error_count()} issues'
+        ) from err
 
-    @property
-    def access_token(self) -> pydantic.SecretStr:
-        return self.config.auth.token
 
-    @property
-    def intents_mapping(self) -> Dict[str, bool]:
-        return self.config.auth.intents
-
-    @property
-    def dbpath(self) -> str:
-        return self.config.storage.database
+def get_config() -> BotConfig:
+    global __CONFIG__
+    if __CONFIG__ is None:
+        LOGGER.error(
+            'Attempted to read configuration object when not present'
+        )
+        raise MissingConfigurationError('No configuration loaded')
+    return __CONFIG__
