@@ -12,6 +12,7 @@ from discord.ext import commands
 
 from ..model import get_config
 from ..model.matchlist import MatchListRepository, ScheduledMatch
+from ..model.config import BotCommand
 from ..exceptions import MatchSchedulingException
 from .autocomplete import autocomplete_timezone
 from .validators import date_parts
@@ -34,22 +35,19 @@ def setup_bot():
             **get_config().auth.intents
         )
     )
-    matchlist = MatchListRepository(get_config().storage.database)
+    config = get_config()
+    matchlist = MatchListRepository(config.storage.database)
+    addmatch_options: BotCommand = config.get_command_info('addmatch')
+    delmatch_options: BotCommand = config.get_command_info('delmatch')
+    showmatches_options: BotCommand = config.get_command_info('showmatches')
 
     @bot.event
     async def on_ready():
         await bot.tree.sync()
 
-    @bot.tree.command(name='addmatch')
+    @bot.tree.command(name=addmatch_options.command_name)
     @discord.app_commands.describe(
-        home_team='The home team participant in the match to be scheduled',
-        away_team='The away team participant in the match to be scheduled',
-        year='The year the scheduled match is to take place',
-        month='The month the scheduled match is to take place',
-        day='The day of month the scheduled match is to take place',
-        hour='The hour of the day the match is to take place',
-        minute='The minute of the hour the match is to take place',
-        timezone='The timezone identifier used to localize the provide date/time info'
+        **addmatch_options.parameters
     )
     @discord.app_commands.autocomplete(
         timezone=autocomplete_timezone
@@ -97,7 +95,8 @@ def setup_bot():
             await interaction.response.send_message(
                 embed=make_scheduling_failure_message(
                     interaction,
-                    err
+                    err,
+                    addmatch_options.direct_response_not_ok
                 ),
                 ephemeral=True
             )
@@ -106,15 +105,15 @@ def setup_bot():
             await interaction.response.send_message(
                 embed=make_scheduling_success_message(
                     interaction,
-                    match_to_schedule
+                    match_to_schedule,
+                    addmatch_options.direct_response_ok
                 ),
                 ephemeral=True
             )
 
-    @bot.tree.command(name='delmatch')
+    @bot.tree.command(name=delmatch_options.command_name)
     @discord.app_commands.describe(
-        home='The home team participant in the match to cancel',
-        away='The away team participant in the match to cancel'
+        **delmatch_options.parameters
     )
     async def del_match(
             interaction: discord.Interaction,
@@ -128,7 +127,8 @@ def setup_bot():
                     embed=make_cancellation_success_message(
                         interaction,
                         home,
-                        away
+                        away,
+                        delmatch_options.direct_response_ok
                     ),
                     ephemeral=True
                 )
@@ -137,19 +137,21 @@ def setup_bot():
                     embed=make_cancellation_failure_message(
                         interaction,
                         home,
-                        away
+                        away,
+                        delmatch_options.direct_response_not_ok
                     ),
                     ephemeral=True
                 )
 
-    @bot.tree.command(name='showmatches')
+    @bot.tree.command(name=showmatches_options.command_name)
     async def show_matches(interaction: discord.Interaction):
         with matchlist as db:
             matches = db.find_matches()
             await interaction.response.send_message(
                 embed=make_match_calendar_message(
                     interaction,
-                    matches
+                    matches,
+                    showmatches_options.direct_response_ok
                 ),
                 ephemeral=True
             )
