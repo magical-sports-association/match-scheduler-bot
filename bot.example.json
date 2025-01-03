@@ -8,8 +8,119 @@
       "message_content": true
     }
   },
+  "commands": [
+    {
+      "command_name": "addmatch",
+      "parameters": {
+        "home_team": "The home team participant in the match to be scheduled",
+        "away_team": "The away team participant in the match to be scheduled",
+        "year": "The year the scheduled match is to take place",
+        "month": "The month the scheduled match is to take place",
+        "day": "The day of month the scheduled match is to take place",
+        "hour": "The hour of the day the match is to take place",
+        "minute": "The minute of the hour the match is to take place",
+        "timezone": "The timezone identifier used to localize the provided date/time info"
+      },
+      "direct_response_ok": {
+        "title": "Match scheduled successfully!",
+        "description": "",
+        "color": "#2ECC71",
+        "field_format": {
+          "name": "",
+          "value": "You have successfully scheduled a match",
+          "inline": false
+        },
+        "footer_format": {
+          "text": "Please check #bot-logs for the official confirmation or use `/showmatches` to set the updated match calendar"
+        }
+      },
+      "direct_response_not_ok": {
+        "title": "Match unabled to be scheduled",
+        "description": "There was a problem scheduling the match",
+        "color": "#E74C3C",
+        "field_format": {
+          "name": "",
+          "value": "Error: {}",
+          "inline": false
+        },
+        "footer_format": {
+          "text": "If you continue to experience issues scheduling a match, please alert staff"
+        }
+      }
+    },
+    {
+      "command_name": "delmatch",
+      "parameters": {
+        "home": "The home team participant in the match to cancel",
+        "away": "The away team participant in the match to cancel"
+      },
+      "direct_response_ok": {
+        "title": "Match cancelled successfully!",
+        "description": "",
+        "color": "#2ECC71",
+        "field_format": {
+          "name": "",
+          "value": "The match between {} and {} has been cancelled",
+          "inline": false
+        },
+        "footer_format": {
+          "text": "Please check #bot-logs for the official confirmation or use `/showmatches` to set the updated match calendar"
+        }
+      },
+      "direct_response_not_ok": {
+        "title": "Match unabled to be cancelled",
+        "description": "There was a problem cancelling the match",
+        "color": "#E74C3C",
+        "field_format": {
+          "name": "",
+          "value": "Error: It is likely the match you are attempting to cancel (__{}__ vs. __{}__) does not exist",
+          "inline": false
+        },
+        "footer_format": {
+          "text": "If you continue to experience issues cancelling a match, please alert staff"
+        }
+      }
+    },
+    {
+      "command_name": "showmatches",
+      "parameters": {},
+      "direct_response_ok": {
+        "title": "Scheduled matches",
+        "description": "Here's a schedule of upcoming matches",
+        "color": "#3498DB",
+        "field_format": {
+          "name": "",
+          "value": "__{}__ vs. __{}__ @ {}",
+          "inline": false
+        },
+        "footer_format": {
+          "text": "There are no matches scheduled."
+        }
+      },
+      "direct_response_not_ok": {
+        "title": "Scheduled matches",
+        "description": "Here's a schedule of upcoming matches",
+        "color": "#3498DB",
+        "field_format": {
+          "name": "",
+          "value": "__{}__ vs. __{}__ @ {}",
+          "inline": false
+        },
+        "footer_format": {
+          "text": "There are no matches scheduled."
+        }
+      }
+    }
+  ],
   "storage": {
     "database": "match.db",
-    "logs": 1323869309537091594
+    "usage_records": {
+      "log_to_text_channel": true,
+      "text_channel_id": 1
+    },
+    "task_records": {
+      "log_to_text_channel": true,
+      "text_channel_id": 1
+    }
   }
 }
