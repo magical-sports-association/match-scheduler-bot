@@ -72,8 +72,9 @@ class MatchListRepository:
     def cancel_match(self, home: int, away: int) -> sqlite3.Cursor:
         return self._conn.execute(
             '''
-            DELETE FROM MATCHES
-            WHERE home_team = ? AND away_team = ?;
+            DELETE FROM matches
+            WHERE home_team = ? AND away_team = ?
+            RETURNING *;
             ''',
             (home, away)
         )

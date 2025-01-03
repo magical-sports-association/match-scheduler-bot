@@ -61,8 +61,7 @@ class BotCommand(pydantic.BaseModel):
     parameters: Dict[str, str]
     direct_response_ok: Optional[DiscordBotEmbedResponse]
     direct_response_not_ok: Optional[DiscordBotEmbedResponse]
-    # task_completed_ok: Optional[DiscordBotEmbedResponse]
-    # task_completed_not_ok: Optional[DiscordBotEmbedResponse]
+    task_completed_message: Optional[DiscordBotEmbedResponse]
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, BotCommand):

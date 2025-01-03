@@ -23,6 +23,7 @@ from .responses import (
     make_cancellation_failure_message,
     make_match_calendar_message
 )
+from .announcements import make_match_callendar_modified_announcement
 
 
 LOGGER = logging.getLogger(__name__)
@@ -110,6 +111,15 @@ def setup_bot():
                 ),
                 ephemeral=True
             )
+            await make_match_callendar_modified_announcement(
+                addmatch_options.task_completed_message,
+                interaction.guild.get_channel(
+                    config.storage.task_records.text_channel_id
+                ),
+                home_team,
+                away_team,
+                int(match_start.timestamp())
+            )
 
     @bot.tree.command(name=delmatch_options.command_name)
     @discord.app_commands.describe(
@@ -122,7 +132,9 @@ def setup_bot():
     ):
         LOGGER.info('Canceling the match: %s vs %s', away.name, home.name)
         with matchlist as db:
-            if db.cancel_match(home.id, away.id).rowcount > 0:
+            cancelled_match = db.cancel_match(home.id, away.id).fetchone()
+            print(f'{cancelled_match=}')
+            if cancelled_match is not None:
                 await interaction.response.send_message(
                     embed=make_cancellation_success_message(
                         interaction,
@@ -131,6 +143,15 @@ def setup_bot():
                         delmatch_options.direct_response_ok
                     ),
                     ephemeral=True
+                )
+                await make_match_callendar_modified_announcement(
+                    delmatch_options.task_completed_message,
+                    interaction.guild.get_channel(
+                        config.storage.task_records.text_channel_id
+                    ),
+                    home,
+                    away,
+                    int(cancelled_match[0])
                 )
             else:
                 await interaction.response.send_message(
