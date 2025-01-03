@@ -46,6 +46,19 @@
         "footer_format": {
           "text": "If you continue to experience issues scheduling a match, please alert staff"
         }
+      },
+      "task_completed_message": {
+        "title": "Match Scheduled!",
+        "description": "",
+        "color": "#78b159",
+        "field_format": {
+          "name": "",
+          "value": "",
+          "inline": false
+        },
+        "footer_format": {
+          "text": ""
+        }
       }
     },
     {
@@ -79,6 +92,19 @@
         "footer_format": {
           "text": "If you continue to experience issues cancelling a match, please alert staff"
         }
+      },
+      "task_completed_message": {
+        "title": "Match Cancelled!",
+        "description": "",
+        "color": "#dd2e44",
+        "field_format": {
+          "name": "",
+          "value": "",
+          "inline": false
+        },
+        "footer_format": {
+          "text": ""
+        }
       }
     },
     {
@@ -97,30 +123,19 @@
           "text": "There are no matches scheduled."
         }
       },
-      "direct_response_not_ok": {
-        "title": "Scheduled matches",
-        "description": "Here's a schedule of upcoming matches",
-        "color": "#3498DB",
-        "field_format": {
-          "name": "",
-          "value": "__{}__ vs. __{}__ @ {}",
-          "inline": false
-        },
-        "footer_format": {
-          "text": "There are no matches scheduled."
-        }
-      }
+      "direct_response_not_ok": null,
+      "task_completed_message": null
     }
   ],
   "storage": {
     "database": "match.db",
     "usage_records": {
-      "log_to_text_channel": true,
+      "log_to_text_channel": false,
       "text_channel_id": 1
     },
     "task_records": {
       "log_to_text_channel": true,
-      "text_channel_id": 1
+      "text_channel_id": 1323869309537091594
     }
   }
 }
