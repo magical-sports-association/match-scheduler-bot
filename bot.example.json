@@ -12,14 +12,38 @@
     {
       "command_name": "schedule-match",
       "parameters": {
-        "home_team": "The home team participant in the match to be scheduled",
-        "away_team": "The away team participant in the match to be scheduled",
-        "year": "The year the scheduled match is to take place",
-        "month": "The month the scheduled match is to take place",
-        "day": "The day of month the scheduled match is to take place",
-        "hour": "The hour of the day the match is to take place",
-        "minute": "The minute of the hour the match is to take place",
-        "timezone": "The timezone identifier used to localize the provided date/time info"
+        "home_team": {
+          "uiname": "team¹",
+          "helptext": "Affiliated team"
+        },
+        "away_team": {
+          "uiname": "team²",
+          "helptext": "Opposing team"
+        },
+        "year": {
+          "uiname": "year",
+          "helptext": "The year this match will take place"
+        },
+        "month": {
+          "uiname": "month",
+          "helptext": "The month this match will take place"
+        },
+        "day": {
+          "uiname": "day",
+          "helptext": "The day of the month this match will take place"
+        },
+        "hour": {
+          "uiname": "hour",
+          "helptext": "The hour of day (in military time) this match will take place"
+        },
+        "minute": {
+          "uiname": "minute",
+          "helptext": "The minute of the hour this match will take place"
+        },
+        "timezone": {
+          "uiname": "timezone",
+          "helptext": "The timezone identifier used to localize the provided date/time info"
+        }
       },
       "direct_response_ok": {
         "title": "Match scheduled successfully!",
@@ -64,8 +88,14 @@
     {
       "command_name": "cancel-match",
       "parameters": {
-        "home": "The home team participant in the match to cancel",
-        "away": "The away team participant in the match to cancel"
+        "home": {
+          "uiname": "team¹",
+          "helptext": "Affiliated team"
+        },
+        "away": {
+          "uiname": "team²",
+          "helptext": "Opposing team"
+        }
       },
       "direct_response_ok": {
         "title": "Match cancelled successfully!",

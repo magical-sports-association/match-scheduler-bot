@@ -8,6 +8,7 @@ from typing import List, Dict, Set, Optional, Any
 from typing_extensions import Annotated
 import pathlib
 import re
+import collections
 
 import pydantic
 
@@ -56,9 +57,14 @@ class PersistentStorage(pydantic.BaseModel):
     # timezones: Set[str]
 
 
+class CommandParameterInfo(pydantic.BaseModel):
+    uiname: Annotated[pydantic.StrictStr, pydantic.Field(min_length=1)]
+    helptext: Annotated[pydantic.StrictStr, pydantic.Field(min_length=1)]
+
+
 class BotCommand(pydantic.BaseModel):
     command_name: Annotated[pydantic.StrictStr, pydantic.Field(min_length=1)]
-    parameters: Dict[str, str]
+    parameters: Dict[str, CommandParameterInfo]
     direct_response_ok: Optional[DiscordBotEmbedResponse]
     direct_response_not_ok: Optional[DiscordBotEmbedResponse]
     task_completed_message: Optional[DiscordBotEmbedResponse]

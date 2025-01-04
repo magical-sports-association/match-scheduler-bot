@@ -49,10 +49,19 @@ def setup_bot():
 
     @bot.tree.command(name=addmatch_options.command_name)
     @discord.app_commands.describe(
-        **addmatch_options.parameters
+        **{
+            param: info.helptext
+            for param, info in addmatch_options.parameters.items()
+        }
     )
     @discord.app_commands.autocomplete(
         timezone=autocomplete_timezone
+    )
+    @discord.app_commands.rename(
+        **{
+            param: info.uiname
+            for param, info in addmatch_options.parameters.items()
+        }
     )
     async def add_match(
         interaction: discord.Interaction,
@@ -124,7 +133,17 @@ def setup_bot():
 
     @bot.tree.command(name=delmatch_options.command_name)
     @discord.app_commands.describe(
-        **delmatch_options.parameters
+        **{
+            param: info.helptext
+            for param, info in delmatch_options.parameters.items()
+        }
+    )
+    @discord.app_commands.rename(
+        **{
+            param: info.uiname
+            for param, info in delmatch_options.parameters.items()
+        }
+
     )
     async def del_match(
             interaction: discord.Interaction,
