@@ -10,7 +10,7 @@
   },
   "commands": [
     {
-      "command_name": "addmatch",
+      "command_name": "schedule-match",
       "parameters": {
         "home_team": "The home team participant in the match to be scheduled",
         "away_team": "The away team participant in the match to be scheduled",
@@ -62,7 +62,7 @@
       }
     },
     {
-      "command_name": "delmatch",
+      "command_name": "cancel-match",
       "parameters": {
         "home": "The home team participant in the match to cancel",
         "away": "The away team participant in the match to cancel"
@@ -108,7 +108,7 @@
       }
     },
     {
-      "command_name": "showmatches",
+      "command_name": "scheduled-matches",
       "parameters": {},
       "direct_response_ok": {
         "title": "Scheduled matches",

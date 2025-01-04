@@ -38,9 +38,10 @@ def setup_bot():
     )
     config = get_config()
     matchlist = MatchListRepository(config.storage.database)
-    addmatch_options: BotCommand = config.get_command_info('addmatch')
-    delmatch_options: BotCommand = config.get_command_info('delmatch')
-    showmatches_options: BotCommand = config.get_command_info('showmatches')
+    addmatch_options: BotCommand = config.get_command_info('schedule-match')
+    delmatch_options: BotCommand = config.get_command_info('cancel-match')
+    showmatches_options: BotCommand = config.get_command_info(
+        'scheduled-matches')
 
     @bot.event
     async def on_ready():
