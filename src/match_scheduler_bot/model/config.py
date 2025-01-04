@@ -8,7 +8,6 @@ from typing import List, Dict, Set, Optional, Any
 from typing_extensions import Annotated
 import pathlib
 import re
-import collections
 
 import pydantic
 
@@ -20,7 +19,7 @@ class BotAuthInfo(pydantic.BaseModel):
     intents: Dict[str, bool]
 
 
-class DiscordBotChannel(pydantic.BaseModel):
+class OutputChannel(pydantic.BaseModel):
     log_to_text_channel: pydantic.StrictBool
     text_channel_id: Annotated[pydantic.StrictInt, pydantic.Field(gt=0)]
 
@@ -35,7 +34,7 @@ class EmbedResponseFooter(pydantic.BaseModel):
     text: Annotated[pydantic.StrictStr, pydantic.Field(max_length=2048)]
 
 
-class DiscordBotEmbedResponse(pydantic.BaseModel):
+class DiscordBotEmbedResponseTemplate(pydantic.BaseModel):
     title: Annotated[pydantic.StrictStr, pydantic.Field(max_length=256)]
     description: Annotated[pydantic.StrictStr, pydantic.Field(max_length=4096)]
     color: Annotated[
@@ -46,14 +45,21 @@ class DiscordBotEmbedResponse(pydantic.BaseModel):
             pattern=re.compile(r'^#[0-9A-Fa-f]{6}$')
         )
     ]
-    field_format: EmbedResponseField
-    footer_format: EmbedResponseFooter
+    fields: Dict[str, EmbedResponseField]
+    footnote: Optional[EmbedResponseFooter]
+    output_channels: Optional[List[OutputChannel]]
+    output_mentions: Optional[List[int]]
+
+    def get_field(self, field: str):
+        if field in self.fields:
+            return self.fields.get(field)
+        raise MissingConfigurationError(
+            f'Unknown field: {field} in {self.title} embed'
+        )
 
 
 class PersistentStorage(pydantic.BaseModel):
     database: str | pathlib.Path
-    usage_records: DiscordBotChannel
-    task_records: DiscordBotChannel
     # timezones: Set[str]
 
 
@@ -65,9 +71,9 @@ class CommandParameterInfo(pydantic.BaseModel):
 class BotCommand(pydantic.BaseModel):
     command_name: Annotated[pydantic.StrictStr, pydantic.Field(min_length=1)]
     parameters: Dict[str, CommandParameterInfo]
-    direct_response_ok: Optional[DiscordBotEmbedResponse]
-    direct_response_not_ok: Optional[DiscordBotEmbedResponse]
-    task_completed_message: Optional[DiscordBotEmbedResponse]
+    direct_response_ok: Optional[DiscordBotEmbedResponseTemplate]
+    direct_response_not_ok: Optional[DiscordBotEmbedResponseTemplate]
+    task_completed_message: Optional[DiscordBotEmbedResponseTemplate]
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, BotCommand):

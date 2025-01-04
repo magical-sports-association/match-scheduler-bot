@@ -49,40 +49,63 @@
         "title": "Match scheduled successfully!",
         "description": "",
         "color": "#2ECC71",
-        "field_format": {
-          "name": "",
-          "value": "You have successfully scheduled a match",
-          "inline": false
+        "fields": {
+          "match_participants": {
+            "name": "",
+            "value": "Match scheduled between __{}__ and __{}__.",
+            "inline": false
+          },
+          "confirm_scheduling": {
+            "name": "",
+            "value": "Check {} for official confirmation.",
+            "inline": false
+          }
         },
-        "footer_format": {
-          "text": "Please check #bot-logs for the official confirmation or use `/showmatches` to set the updated match calendar"
-        }
+        "footnote": null,
+        "output_channels": null,
+        "output_mentions": null
       },
       "direct_response_not_ok": {
         "title": "Match unabled to be scheduled",
-        "description": "There was a problem scheduling the match",
+        "description": "",
         "color": "#E74C3C",
-        "field_format": {
-          "name": "",
-          "value": "Error: {}",
-          "inline": false
+        "fields": {
+          "match_scheduling_error": {
+            "name": "",
+            "value": "Error: {}",
+            "inline": false
+          }
         },
-        "footer_format": {
-          "text": "If you continue to experience issues scheduling a match, please alert staff"
-        }
+        "footnote": null,
+        "output_channels": null,
+        "output_mentions": null
       },
       "task_completed_message": {
         "title": "Match Scheduled!",
         "description": "",
         "color": "#78b159",
-        "field_format": {
-          "name": "",
-          "value": "",
-          "inline": false
+        "fields": {
+          "match_participants": {
+            "name": "",
+            "value": "**Teams**: {} vs. {}",
+            "inline": false
+          },
+          "match_time": {
+            "name": "",
+            "value": "**Date**: {}",
+            "inline": false
+          }
         },
-        "footer_format": {
-          "text": ""
-        }
+        "footnote": null,
+        "output_channels": [
+          {
+            "log_to_text_channel": true,
+            "text_channel_id": 1323869309537091594
+          }
+        ],
+        "output_mentions": [
+          1320147480482021416
+        ]
       }
     },
     {
@@ -101,40 +124,58 @@
         "title": "Match cancelled successfully!",
         "description": "",
         "color": "#2ECC71",
-        "field_format": {
-          "name": "",
-          "value": "The match between {} and {} has been cancelled",
-          "inline": false
+        "fields": {
+          "match_participants": {
+            "name": "",
+            "value": "The mactch between __{}__ and __{}__ has been cancelled.",
+            "inline": false
+          }
         },
-        "footer_format": {
-          "text": "Please check #bot-logs for the official confirmation or use `/showmatches` to set the updated match calendar"
-        }
+        "footnote": null,
+        "output_channels": null,
+        "output_mentions": null
       },
       "direct_response_not_ok": {
         "title": "Match unabled to be cancelled",
-        "description": "There was a problem cancelling the match",
+        "description": "",
         "color": "#E74C3C",
-        "field_format": {
-          "name": "",
-          "value": "Error: It is likely the match you are attempting to cancel (__{}__ vs. __{}__) does not exist",
-          "inline": false
+        "fields": {
+          "no_such_match": {
+            "name": "",
+            "value": "Error: It is likely the match you are attempting to cancel (__{}__ vs. __{}__) does not exist.",
+            "inline": false
+          }
         },
-        "footer_format": {
-          "text": "If you continue to experience issues cancelling a match, please alert staff"
-        }
+        "footnote": null,
+        "output_channels": null,
+        "output_mentions": null
       },
       "task_completed_message": {
         "title": "Match Cancelled!",
         "description": "",
         "color": "#dd2e44",
-        "field_format": {
-          "name": "",
-          "value": "",
-          "inline": false
+        "fields": {
+          "match_participants": {
+            "name": "",
+            "value": "**Teams**: {} vs. {}",
+            "inline": false
+          },
+          "match_time": {
+            "name": "",
+            "value": "**Date**: {}",
+            "inline": false
+          }
         },
-        "footer_format": {
-          "text": ""
-        }
+        "footnote": null,
+        "output_channels": [
+          {
+            "log_to_text_channel": true,
+            "text_channel_id": 1323869309537091594
+          }
+        ],
+        "output_mentions": [
+          1320147480482021416
+        ]
       }
     },
     {
@@ -144,28 +185,27 @@
         "title": "Scheduled matches",
         "description": "Here's a schedule of upcoming matches",
         "color": "#3498DB",
-        "field_format": {
-          "name": "",
-          "value": "__{}__ vs. __{}__ @ {}",
-          "inline": false
+        "fields": {
+          "match_item": {
+            "name": "",
+            "value": "__{}__ vs. __{}__ @ {}",
+            "inline": false
+          },
+          "match_list_empty": {
+            "name": "",
+            "value": "There are no matches scheduled",
+            "inline": false
+          }
         },
-        "footer_format": {
-          "text": "There are no matches scheduled."
-        }
+        "footnote": null,
+        "output_channels": null,
+        "output_mentions": null
       },
       "direct_response_not_ok": null,
       "task_completed_message": null
     }
   ],
   "storage": {
-    "database": "match.db",
-    "usage_records": {
-      "log_to_text_channel": false,
-      "text_channel_id": 1
-    },
-    "task_records": {
-      "log_to_text_channel": true,
-      "text_channel_id": 1323869309537091594
-    }
+    "database": "match.db"
   }
 }

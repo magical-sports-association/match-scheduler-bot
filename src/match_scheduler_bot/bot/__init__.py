@@ -121,15 +121,17 @@ def setup_bot():
                 ),
                 ephemeral=True
             )
-            await make_match_callendar_modified_announcement(
-                addmatch_options.task_completed_message,
-                interaction.guild.get_channel(
-                    config.storage.task_records.text_channel_id
-                ),
-                home_team,
-                away_team,
-                int(match_start.timestamp())
-            )
+            for channel in addmatch_options.task_completed_message.output_channels:
+                if channel.log_to_text_channel:
+                    await make_match_callendar_modified_announcement(
+                        addmatch_options.task_completed_message,
+                        interaction.guild.get_channel(
+                            channel.text_channel_id
+                        ),
+                        home_team,
+                        away_team,
+                        int(match_start.timestamp())
+                    )
 
     @bot.tree.command(name=delmatch_options.command_name)
     @discord.app_commands.describe(
@@ -164,15 +166,17 @@ def setup_bot():
                     ),
                     ephemeral=True
                 )
-                await make_match_callendar_modified_announcement(
-                    delmatch_options.task_completed_message,
-                    interaction.guild.get_channel(
-                        config.storage.task_records.text_channel_id
-                    ),
-                    home,
-                    away,
-                    int(cancelled_match[0])
-                )
+                for channel in delmatch_options.task_completed_message.output_channels:
+                    if channel.log_to_text_channel:
+                        await make_match_callendar_modified_announcement(
+                            delmatch_options.task_completed_message,
+                            interaction.guild.get_channel(
+                                channel.text_channel_id
+                            ),
+                            home,
+                            away,
+                            int(cancelled_match[0])
+                        )
             else:
                 await interaction.response.send_message(
                     embed=make_cancellation_failure_message(
