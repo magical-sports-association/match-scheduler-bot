@@ -4,10 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "match_scheduler_bot"
-version = "0.0.1"
+version = "0.1.0"
 description = "A discord bot for scheduling msa matches"
 readme = "README.md"
 requires-python = ">=3.10"
+dependencies = [
+  "click == 8.1.7",
+  "discord.py == 2.4.0",
+  "pydantic == 2.10.4"
+]
 
 [project.scripts]
 matchschedulerbot = "match_scheduler_bot.cli:matchschedulerbot"
