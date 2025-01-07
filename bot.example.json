@@ -8,15 +8,16 @@
       "message_content": true
     }
   },
-  "commands": [
-    {
-      "command_name": "schedule-match",
+  "commands": {
+    "create_match": {
+      "invoke_with": "schedule-match",
+      "description": "Schedule a match between two opposing teams",
       "parameters": {
-        "home_team": {
+        "team_1": {
           "uiname": "team¹",
           "helptext": "Affiliated team"
         },
-        "away_team": {
+        "team_2": {
           "uiname": "team²",
           "helptext": "Opposing team"
         },
@@ -45,166 +46,47 @@
           "helptext": "The timezone identifier used to localize the provided date/time info"
         }
       },
-      "direct_response_ok": {
-        "title": "Match scheduled successfully!",
-        "description": "",
-        "color": "#2ECC71",
-        "fields": {
-          "match_participants": {
-            "name": "",
-            "value": "Match scheduled between __{}__ and __{}__.",
-            "inline": false
-          },
-          "confirm_scheduling": {
-            "name": "",
-            "value": "Check {} for official confirmation.",
-            "inline": false
-          }
-        },
-        "footnote": null,
-        "output_channels": null,
-        "output_mentions": null
-      },
-      "direct_response_not_ok": {
-        "title": "Match unabled to be scheduled",
-        "description": "",
-        "color": "#E74C3C",
-        "fields": {
-          "match_scheduling_error": {
-            "name": "",
-            "value": "Error: {}",
-            "inline": false
-          }
-        },
-        "footnote": null,
-        "output_channels": null,
-        "output_mentions": null
-      },
-      "task_completed_message": {
-        "title": "Match Scheduled!",
-        "description": "",
-        "color": "#78b159",
-        "fields": {
-          "match_participants": {
-            "name": "",
-            "value": "**Teams**: {} vs. {}",
-            "inline": false
-          },
-          "match_time": {
-            "name": "",
-            "value": "**Date**: {}",
-            "inline": false
-          }
-        },
-        "footnote": null,
-        "output_channels": [
-          {
-            "log_to_text_channel": true,
-            "text_channel_id": 1323869309537091594
-          }
-        ],
-        "output_mentions": [
-          1320147480482021416
-        ]
-      }
+      "allowed_roles": [
+        "staff",
+        "team captain"
+      ]
     },
-    {
-      "command_name": "cancel-match",
+    "delete_match": {
+      "invoke_with": "cancel-match",
+      "description": "Cancel a match between two opposing teams",
       "parameters": {
-        "home": {
+        "team_1": {
           "uiname": "team¹",
           "helptext": "Affiliated team"
         },
-        "away": {
+        "team_2": {
           "uiname": "team²",
           "helptext": "Opposing team"
         }
       },
-      "direct_response_ok": {
-        "title": "Match cancelled successfully!",
-        "description": "",
-        "color": "#2ECC71",
-        "fields": {
-          "match_participants": {
-            "name": "",
-            "value": "The mactch between __{}__ and __{}__ has been cancelled.",
-            "inline": false
-          }
-        },
-        "footnote": null,
-        "output_channels": null,
-        "output_mentions": null
-      },
-      "direct_response_not_ok": {
-        "title": "Match unabled to be cancelled",
-        "description": "",
-        "color": "#E74C3C",
-        "fields": {
-          "no_such_match": {
-            "name": "",
-            "value": "Error: It is likely the match you are attempting to cancel (__{}__ vs. __{}__) does not exist.",
-            "inline": false
-          }
-        },
-        "footnote": null,
-        "output_channels": null,
-        "output_mentions": null
-      },
-      "task_completed_message": {
-        "title": "Match Cancelled!",
-        "description": "",
-        "color": "#dd2e44",
-        "fields": {
-          "match_participants": {
-            "name": "",
-            "value": "**Teams**: {} vs. {}",
-            "inline": false
-          },
-          "match_time": {
-            "name": "",
-            "value": "**Date**: {}",
-            "inline": false
-          }
-        },
-        "footnote": null,
-        "output_channels": [
-          {
-            "log_to_text_channel": true,
-            "text_channel_id": 1323869309537091594
-          }
-        ],
-        "output_mentions": [
-          1320147480482021416
-        ]
-      }
+      "allowed_roles": [
+        "staff",
+        "team captain"
+      ]
     },
-    {
-      "command_name": "scheduled-matches",
+    "list_matches": {
+      "invoke_with": "match-calendar",
+      "description": "Display a list of upcoming matches",
       "parameters": {},
-      "direct_response_ok": {
-        "title": "Scheduled matches",
-        "description": "Here's a schedule of upcoming matches",
-        "color": "#3498DB",
-        "fields": {
-          "match_item": {
-            "name": "",
-            "value": "__{}__ vs. __{}__ @ {}",
-            "inline": false
-          },
-          "match_list_empty": {
-            "name": "",
-            "value": "There are no matches scheduled",
-            "inline": false
-          }
-        },
-        "footnote": null,
-        "output_channels": null,
-        "output_mentions": null
+      "allowed_roles": []
+    },
+    "command_help": {
+      "invoke_with": "command-help",
+      "description": "Show helptext for commands provided by this bot",
+      "parameters": {
+        "command": {
+          "uiname": "command",
+          "helptext": "Show this command's man page"
+        }
       },
-      "direct_response_not_ok": null,
-      "task_completed_message": null
+      "allowed_roles": []
     }
-  ],
+  },
   "storage": {
     "database": "match.db"
   }
