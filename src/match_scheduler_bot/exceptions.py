@@ -8,6 +8,13 @@
 class MatchSchedulerBotException(Exception):
     '''Base exception for the bot package'''
 
+    def __init__(self, msg: str):
+        self._reason = msg
+
+    @property
+    def what(self) -> str:
+        return self._reason
+
 
 class BotConfigurationError(MatchSchedulerBotException):
     '''Exception for specifying issues with bot configuration'''

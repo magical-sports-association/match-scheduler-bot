@@ -11,11 +11,27 @@ import discord
 from discord.ext import commands
 
 from ..model import get_config
-from ..model.matchlist import MatchListRepository, ScheduledMatch
+from ..model.matchlist import MatchListRepository
+from ..model.rows import (
+    MatchToCancel,
+    MatchToSchedule,
+    ScheduledMatch
+)
 from ..model.config import CommandSpec
-from ..exceptions import MatchSchedulingException
+from ..exceptions import (
+    InvalidStartTimeGiven,
+    InvalidTimezoneSpecified,
+    DuplicatedMatchDetected,
+    MatchSchedulingException,
+    CancellingNonexistantMatch,
+    MatchCancellationException,
+    MatchScheduleNotObtained
+)
 from .autocomplete import autocomplete_timezone
-from .validators import date_parts
+from .validators import (
+    date_parts,
+    date_in_near_future
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -69,7 +85,43 @@ def setup_bot():
         minute: discord.app_commands.Range[int, 0, 59],
         timezone: str
     ):
-        pass
+        try:
+            await interaction.response.send_message(
+                content='Attempting to schedule a match between __{}__ and __{}__ ...'.format(
+                    team_1.name,
+                    team_2.name
+                ),
+                ephemeral=True
+            )
+            as_dt = date_in_near_future(date_parts(
+                year=year,
+                month=month,
+                day=day,
+                hour=hour,
+                minute=minute,
+                tzkey=timezone
+            ))
+            with matchlist as db:
+                scheduled = db.insert_match(
+                    MatchToSchedule.with_determistic_team_ordering(
+                        round(as_dt.timestamp()),
+                        team_1.id,
+                        team_2.id
+                    )
+                )
+            await interaction.followup.send(
+                embed=None,
+                ephemeral=True
+            )
+
+        except InvalidTimezoneSpecified as err:
+            pass
+        except InvalidStartTimeGiven as err:
+            pass
+        except DuplicatedMatchDetected as err:
+            pass
+        except MatchSchedulingException as err:
+            pass
 
     @bot.tree.command(
         name=delmatch_options.invoke_with,
@@ -93,13 +145,28 @@ def setup_bot():
             team_1: discord.Role,
             team_2: discord.Role
     ):
-        pass
+        try:
+            with matchlist as db:
+                db.delete_match(
+                    MatchToCancel.with_determistic_team_ordering(
+                        team_1.id,
+                        team_2.id
+                    )
+                )
+        except CancellingNonexistantMatch as err:
+            pass
+        except MatchCancellationException as err:
+            pass
 
     @bot.tree.command(
         name=showmatches_options.invoke_with,
         description=showmatches_options.description
     )
     async def show_matches(interaction: discord.Interaction):
-        pass
+        try:
+            with matchlist as db:
+                pass
+        except MatchScheduleNotObtained as err:
+            pass
 
     return bot
