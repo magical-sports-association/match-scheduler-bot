@@ -11,9 +11,6 @@ import datetime
 from ...model.matchlist import MatchListRepository
 from ...model.rows import MatchToSchedule, ScheduledMatch
 from ...exceptions import (
-    InvalidStartTimeGiven,
-    InvalidTimezoneSpecified,
-    DuplicatedMatchDetected,
     MatchSchedulingException
 )
 from ..autocomplete import autocomplete_timezone
@@ -72,6 +69,14 @@ class AddMatchOptions:
             'timezone': autocomplete_timezone
         }
 
+    @staticmethod
+    def allowlist() -> list:
+        __LOGGER__.debug('Retrieving allowlist')
+        return [
+            'team captain',
+            'staff'
+        ]
+
 
 class AddMatchCommand(commands.Cog):
     SUCCESS = discord.Color.from_str('#2ECC71')
@@ -93,6 +98,7 @@ class AddMatchCommand(commands.Cog):
     @discord.app_commands.autocomplete(
         **AddMatchOptions.autocomplete_callbacks()
     )
+    @discord.app_commands.checks.has_any_role(*AddMatchOptions.allowlist())
     async def do_it(
         self,
         interaction: discord.Interaction,
@@ -115,7 +121,7 @@ class AddMatchCommand(commands.Cog):
                 interaction.command.name,
                 interaction.user.display_name
             )
-            __LOGGER__.debug('Validating date input')
+            __LOGGER__.debug('Validating date/time input')
             as_dt = date_in_near_future(date_parts(
                 year,
                 month,
@@ -124,7 +130,7 @@ class AddMatchCommand(commands.Cog):
                 minute,
                 timezone
             ))
-            __LOGGER__.debug('Provided date is valid')
+            __LOGGER__.debug('Provided date/time is valid')
             with self.matchlist as db:
                 __LOGGER__.debug('Inserting proposed match into matchlist')
                 scheduled = db.insert_match(
@@ -139,14 +145,12 @@ class AddMatchCommand(commands.Cog):
                 embed=self.cmd_ok_msg(interaction, scheduled),
                 ephemeral=True
             )
-        except InvalidTimezoneSpecified as err:
-            __LOGGER__.error('Provided timezone is not known')
-        except InvalidStartTimeGiven as err:
-            __LOGGER__.error('Provided datetime is invalid')
-        except DuplicatedMatchDetected as err:
-            __LOGGER__.error('Provided matchup already exists')
         except MatchSchedulingException as err:
-            __LOGGER__.error('Match scheduling prevented')
+            __LOGGER__.error('Match scheduling prevented: %s', err.what)
+            await interaction.followup.send(
+                embed=self.cmd_err_msg(err),
+                ephemeral=True
+            )
 
     @do_it.error
     async def cannot_do_it(
@@ -154,14 +158,49 @@ class AddMatchCommand(commands.Cog):
         interaction: discord.Interaction,
         error: discord.app_commands.AppCommandError
     ):
-        pass
+        if isinstance(error, discord.app_commands.MissingAnyRole):
+            __LOGGER__.info(
+                '%s does not have a required role to use /%s',
+                interaction.user.display_name,
+                interaction.command.name
+            )
+            await interaction.response.send_message(
+                content=self.cmd_forbidden.format(error.missing_roles),
+                ephemeral=True
+            )
+        else:
+            __LOGGER__.exception('Unexpected error\n', error)
+            await interaction.response.send_message(
+                content=self.cmd_exc_msg,
+                ephemeral=True
+            )
 
     @property
     def ack_cmd_msg(self) -> str:
         return 'Attempting to schedule a match between __{}__ and __{}__ ...'
 
+    @property
+    def cmd_forbidden(self) -> str:
+        return '''Sorry!
+        You do not have a sufficient role to use this command.
+        Allowed roles: {}
+        '''
+
+    @property
+    def cmd_exc_msg(self) -> str:
+        return '''Something has gone terribly wrong.
+        If this continues, please alert staff.
+        '''
+
     def cmd_err_msg(self, error: MatchSchedulingException) -> discord.Embed:
-        return "Error: {}"
+        return discord.Embed(
+            title='Error',
+            color=self.ERROR
+        ).add_field(
+            name='What went wrong',
+            value=f'- {error.what}',
+            inline=False
+        )
 
     def cmd_ok_msg(
         self,
@@ -179,7 +218,7 @@ class AddMatchCommand(commands.Cog):
             ),
             inline=False
         ).add_field(
-            name='Kickoff',
+            name='Kickoff at',
             value='- <t:{}:f>'.format(match.start_time),
             inline=False
         )
