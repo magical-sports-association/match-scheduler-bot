@@ -12,7 +12,8 @@ from discord.ext import commands
 from ..model import get_config
 from .cogs import (
     AddMatchCommand,
-    DeleteMatchCommand
+    DeleteMatchCommand,
+    GetMatchCommand
 )
 
 
@@ -38,6 +39,8 @@ def use_bot() -> commands.Bot:
             __LOGGER__.info('Added extension: %s', AddMatchCommand.__name__)
             await __BOT__.add_cog(DeleteMatchCommand(get_config().data.database))
             __LOGGER__.info('Added extension: %s', DeleteMatchCommand.__name__)
+            await __BOT__.add_cog(GetMatchCommand(get_config().data.database))
+            __LOGGER__.info('Added extension: %s', GetMatchCommand.__name__)
             __LOGGER__.debug('Synchronizing command tree with discord')
             await __BOT__.tree.sync()
             __LOGGER__.debug('Command tree synchronized')
