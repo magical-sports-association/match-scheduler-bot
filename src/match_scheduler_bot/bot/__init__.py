@@ -32,11 +32,35 @@ from .validators import (
     date_parts,
     date_in_near_future
 )
+from .cogs import AddMatchCog
 
 
-LOGGER = logging.getLogger(__name__)
+__LOGGER__ = logging.getLogger(__name__)
+__BOT__ = None
 
 
+def use_bot() -> commands.Bot:
+    global __BOT__
+    if __BOT__ is None:
+        __LOGGER__.info('First request for bot instance, initializing...')
+        __BOT__ = commands.Bot(
+            command_prefix=commands.when_mentioned_or('!'),
+            intents=discord.Intents(
+                **get_config().auth.intents
+            )
+        )
+
+        @__BOT__.event
+        async def on_ready():
+            __LOGGER__.info('Responding to event `on_ready`')
+            await __BOT__.add_cog(AddMatchCog())
+            await __BOT__.tree.sync()
+
+    __LOGGER__.info('Returning the singleton bot instance')
+    return __BOT__
+
+
+'''
 def setup_bot():
     bot = commands.Bot(
         command_prefix=commands.when_mentioned_or('!'),
@@ -170,3 +194,4 @@ def setup_bot():
             pass
 
     return bot
+'''

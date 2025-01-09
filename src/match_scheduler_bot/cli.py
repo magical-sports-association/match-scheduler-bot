@@ -12,7 +12,7 @@ from . import (
     setup_config,
 )
 from .model import get_config
-from .bot import setup_bot
+from .bot import use_bot
 
 
 @click.command()
@@ -30,7 +30,7 @@ def matchschedulerbot(bot_config, log_config):
     """Entry point to matchschedulerbot"""
     setup_logging(log_config)
     setup_config(bot_config)
-    setup_bot().run(
+    use_bot().run(
         token=get_config().auth.token.get_secret_value(),
         log_handler=None
     )
