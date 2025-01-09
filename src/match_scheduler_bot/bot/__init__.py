@@ -5,34 +5,12 @@
 '''
 
 import logging
-import datetime
 
 import discord
 from discord.ext import commands
 
 from ..model import get_config
-from ..model.matchlist import MatchListRepository
-from ..model.rows import (
-    MatchToCancel,
-    MatchToSchedule,
-    ScheduledMatch
-)
-from ..model.config import CommandSpec
-from ..exceptions import (
-    InvalidStartTimeGiven,
-    InvalidTimezoneSpecified,
-    DuplicatedMatchDetected,
-    MatchSchedulingException,
-    CancellingNonexistantMatch,
-    MatchCancellationException,
-    MatchScheduleNotObtained
-)
-from .autocomplete import autocomplete_timezone
-from .validators import (
-    date_parts,
-    date_in_near_future
-)
-from .cogs import AddMatchCog
+from .cogs import AddMatchCommand
 
 
 __LOGGER__ = logging.getLogger(__name__)
@@ -53,8 +31,10 @@ def use_bot() -> commands.Bot:
         @__BOT__.event
         async def on_ready():
             __LOGGER__.info('Responding to event `on_ready`')
-            await __BOT__.add_cog(AddMatchCog())
+            await __BOT__.add_cog(AddMatchCommand(get_config().data.database))
+            __LOGGER__.debug('Synchronizing command tree with discord')
             await __BOT__.tree.sync()
+            __LOGGER__.debug('Command tree synchronized')
 
     __LOGGER__.info('Returning the singleton bot instance')
     return __BOT__

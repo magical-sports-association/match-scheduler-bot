@@ -4,4 +4,4 @@
     :module_author: CountTails
 '''
 
-from .addmatch import AddMatchCog
+from .addmatch import AddMatchCommand
