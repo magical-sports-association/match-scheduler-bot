@@ -1,23 +1,15 @@
 '''
-    :module_name: addmatch
-    :module_summary: cog definition for the slash command to add a match
+    :module_name: delmatch
+    :module_summary: cog definition for slash command used to delete a match
     :module_author: CountTails
 '''
 
 from __future__ import annotations
 import logging
-import datetime
 
 from ...model.matchlist import MatchListRepository
-from ...model.rows import MatchToSchedule, ScheduledMatch
-from ...exceptions import (
-    MatchSchedulingException
-)
-from ..autocomplete import autocomplete_timezone
-from ..validators import (
-    date_in_near_future,
-    date_parts
-)
+from ...model.rows import ScheduledMatch, MatchToCancel
+from ...exceptions import MatchCancellationException
 
 import discord
 from discord.ext import commands
@@ -26,7 +18,7 @@ from discord.ext import commands
 __LOGGER__ = logging.getLogger(__name__)
 
 
-class AddMatchOptions:
+class DelMatchOptions:
     def __init__(self):
         raise TypeError(
             f'{self.__class__.__name__} cannot be instantiated'
@@ -36,8 +28,8 @@ class AddMatchOptions:
     def command_info() -> dict:
         __LOGGER__.debug('Retrieving command information')
         return {
-            'name': 'schedule-match',
-            'description': 'Schedule a match between two opposing teams'
+            'name': 'cancel-match',
+            'description': 'Cancel a match between two opposing teams'
         }
 
     @staticmethod
@@ -46,27 +38,14 @@ class AddMatchOptions:
         return {
             'team_1': 'Affiliated team',
             'team_2': 'Opposing team',
-            'year': 'The year this match will take place',
-            'month': 'The month this match will take place',
-            'day': 'The day of the month this match will take place',
-            'hour': 'The hour of day (in military time) this match will take place',
-            'minute': 'The minute of the hour this match will take place',
-            'timezone': 'The timezone identifier used to localize the provided date/time info'
         }
 
     @staticmethod
-    def parameter_renames() -> dict:
+    def paremeter_renames() -> dict:
         __LOGGER__.debug('Retrieving parameter renames')
         return {
             'team_1': 'team¹',
             'team_2': 'team²'
-        }
-
-    @staticmethod
-    def autocomplete_callbacks() -> dict:
-        __LOGGER__.debug('Retrieving autocomplete callbacks')
-        return {
-            'timezone': autocomplete_timezone
         }
 
     @staticmethod
@@ -78,7 +57,7 @@ class AddMatchOptions:
         ]
 
 
-class AddMatchCommand(commands.Cog):
+class DeleteMatchCommand(commands.Cog):
     SUCCESS = discord.Color.from_str('#2ECC71')
     ERROR = discord.Color.from_str('#E74C3C')
     INFO = discord.Color.from_str('#ffc01c')
@@ -87,29 +66,20 @@ class AddMatchCommand(commands.Cog):
         self.matchlist = MatchListRepository(matchdb)
 
     @discord.app_commands.command(
-        **AddMatchOptions.command_info()
+        **DelMatchOptions.command_info()
     )
     @discord.app_commands.describe(
-        **AddMatchOptions.parameter_descriptions()
+        **DelMatchOptions.parameter_descriptions()
     )
     @discord.app_commands.rename(
-        **AddMatchOptions.parameter_renames()
+        **DelMatchOptions.paremeter_renames()
     )
-    @discord.app_commands.autocomplete(
-        **AddMatchOptions.autocomplete_callbacks()
-    )
-    @discord.app_commands.checks.has_any_role(*AddMatchOptions.allowlist())
+    @discord.app_commands.checks.has_any_role(*DelMatchOptions.allowlist())
     async def do_it(
         self,
         interaction: discord.Interaction,
         team_1: discord.Role,
-        team_2: discord.Role,
-        year: discord.app_commands.Range[int, datetime.MINYEAR, datetime.MAXYEAR],
-        month: discord.app_commands.Range[int, 1, 12],
-        day: discord.app_commands.Range[int, 1, 31],
-        hour: discord.app_commands.Range[int, 0, 23],
-        minute: discord.app_commands.Range[int, 0, 59],
-        timezone: str
+        team_2: discord.Role
     ):
         try:
             await interaction.response.send_message(
@@ -121,32 +91,21 @@ class AddMatchCommand(commands.Cog):
                 interaction.command.name,
                 interaction.user.display_name
             )
-            __LOGGER__.debug('Validating date/time input')
-            as_dt = date_in_near_future(date_parts(
-                year,
-                month,
-                day,
-                hour,
-                minute,
-                timezone
-            ))
-            __LOGGER__.debug('Provided date/time is valid')
             with self.matchlist as db:
-                __LOGGER__.debug('Inserting proposed match into matchlist')
-                scheduled = db.insert_match(
-                    MatchToSchedule.with_determistic_team_ordering(
-                        round(as_dt.timestamp()),
+                __LOGGER__.debug('Removing requested match from match list')
+                cancelled = db.delete_match(
+                    MatchToCancel.with_determistic_team_ordering(
                         team_1.id,
                         team_2.id
                     )
                 )
-            __LOGGER__.info('Match successfully added')
+            __LOGGER__.info('Match successfully cancelled')
             await interaction.followup.send(
-                embed=self.cmd_ok_msg(interaction, scheduled),
+                embed=self.cmd_ok_msg(interaction, cancelled),
                 ephemeral=True
             )
-        except MatchSchedulingException as err:
-            __LOGGER__.error('Match scheduling prevented: %s', err.what)
+        except MatchCancellationException as err:
+            __LOGGER__.error('Match cancellation prevented: %s', err.what)
             await interaction.followup.send(
                 embed=self.cmd_err_msg(err),
                 ephemeral=True
@@ -177,7 +136,7 @@ class AddMatchCommand(commands.Cog):
 
     @property
     def ack_cmd_msg(self) -> str:
-        return 'Attempting to schedule a match between __{}__ and __{}__ ...'
+        return 'Attempting to cancel the match between __{}__ and __{}__ ...'
 
     @property
     def cmd_forbidden(self) -> str:
@@ -192,7 +151,7 @@ class AddMatchCommand(commands.Cog):
             'My programming did not account for what just happened.\n' + \
             'Please alert staff if this continues.'
 
-    def cmd_err_msg(self, error: MatchSchedulingException) -> discord.Embed:
+    def cmd_err_msg(self, error: MatchCancellationException) -> discord.Embed:
         return discord.Embed(
             title='Error',
             color=self.ERROR
@@ -218,7 +177,7 @@ class AddMatchCommand(commands.Cog):
             ),
             inline=False
         ).add_field(
-            name='Kickoff at',
+            name='Freed time',
             value='- <t:{}:f>'.format(match.start_time),
             inline=False
         )

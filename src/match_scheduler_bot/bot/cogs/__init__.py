@@ -5,3 +5,4 @@
 '''
 
 from .addmatch import AddMatchCommand
+from .delmatch import DeleteMatchCommand
