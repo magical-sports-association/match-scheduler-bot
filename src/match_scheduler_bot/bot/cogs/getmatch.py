@@ -15,6 +15,7 @@ from ...exceptions import MatchScheduleNotObtained
 
 import discord
 from discord.ext import commands
+from discord.ext import tasks
 
 
 __LOGGER__ = logging.getLogger(__name__)
@@ -111,15 +112,11 @@ class GetMatchCommand(commands.Cog):
         for m in matches:
             msg.add_field(
                 name='',
-                value='- **Teams** | {} vs. {}'.format(
+                value='- {} vs. {} | <t:{}:f>'.format(
                     interaction.guild.get_role(m.team_1_id).mention,
-                    interaction.guild.get_role(m.team_2_id).mention
+                    interaction.guild.get_role(m.team_2_id).mention,
+                    m.start_time
                 ),
-                inline=False
-            )
-            msg.add_field(
-                name='',
-                value='- **Date** | <t:{}:f>'.format(m.start_time),
                 inline=False
             )
             has_matches = True

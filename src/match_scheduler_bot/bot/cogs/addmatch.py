@@ -77,6 +77,18 @@ class AddMatchOptions:
             'staff'
         ]
 
+    @staticmethod
+    def bulletin_board_channel_id() -> int:
+        return 1327047213234524252
+
+    @staticmethod
+    def staff_alert_channel_id() -> int:
+        return 1327047313482317918
+
+    @staticmethod
+    def staff_role_id() -> int:
+        return 1320147480482021416
+
 
 class AddMatchCommand(commands.Cog):
     SUCCESS = discord.Color.from_str('#2ECC71')
@@ -141,9 +153,25 @@ class AddMatchCommand(commands.Cog):
                     )
                 )
             __LOGGER__.info('Match successfully added')
+            announcement = self.cmd_ok_msg(interaction, scheduled)
             await interaction.followup.send(
-                embed=self.cmd_ok_msg(interaction, scheduled),
+                embed=announcement,
                 ephemeral=True
+            )
+            __LOGGER__.info('Publishing schuduled match to public bulletin')
+            await interaction.guild.get_channel(
+                AddMatchOptions.bulletin_board_channel_id()
+            ).send(
+                embed=announcement
+            )
+            __LOGGER__.info('Alerting staff of new scheduled match')
+            await interaction.guild.get_channel(
+                AddMatchOptions.staff_alert_channel_id()
+            ).send(
+                content=interaction.guild.get_role(
+                    AddMatchOptions.staff_role_id()
+                ).mention,
+                embed=announcement
             )
         except MatchSchedulingException as err:
             __LOGGER__.error('Match scheduling prevented: %s', err.what)
@@ -208,17 +236,17 @@ class AddMatchCommand(commands.Cog):
         match: ScheduledMatch
     ) -> discord.Embed:
         return discord.Embed(
-            title='Success',
+            title='Match Scheduled',
             color=self.SUCCESS
         ).add_field(
-            name='Teams',
-            value='- __{}__ and __{}__'.format(
+            name='',
+            value='- **Teams** | __{}__ vs. __{}__'.format(
                 interaction.guild.get_role(match.team_1_id).name,
                 interaction.guild.get_role(match.team_2_id).name
             ),
             inline=False
         ).add_field(
-            name='Kickoff at',
-            value='- <t:{}:f>'.format(match.start_time),
+            name='',
+            value='- **Date** | <t:{}:f>'.format(match.start_time),
             inline=False
         )

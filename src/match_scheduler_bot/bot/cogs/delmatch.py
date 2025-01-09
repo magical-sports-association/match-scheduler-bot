@@ -13,6 +13,7 @@ from ...exceptions import MatchCancellationException
 
 import discord
 from discord.ext import commands
+from discord.ext import tasks
 
 
 __LOGGER__ = logging.getLogger(__name__)
@@ -55,6 +56,18 @@ class DelMatchOptions:
             'team captain',
             'staff'
         ]
+
+    @staticmethod
+    def bulletin_board_channel_id() -> int:
+        return 1327047213234524252
+
+    @staticmethod
+    def staff_alert_channel_id() -> int:
+        return 1327047313482317918
+
+    @staticmethod
+    def staff_role_id() -> int:
+        return 1320147480482021416
 
 
 class DeleteMatchCommand(commands.Cog):
@@ -100,9 +113,25 @@ class DeleteMatchCommand(commands.Cog):
                     )
                 )
             __LOGGER__.info('Match successfully cancelled')
+            announcement = self.cmd_ok_msg(interaction, cancelled)
             await interaction.followup.send(
-                embed=self.cmd_ok_msg(interaction, cancelled),
+                embed=announcement,
                 ephemeral=True
+            )
+            __LOGGER__.info('Publishing match cancellation to public bulletin')
+            await interaction.guild.get_channel(
+                DelMatchOptions.bulletin_board_channel_id()
+            ).send(
+                embed=announcement
+            )
+            __LOGGER__.info('Alerting staff of cancelled match')
+            await interaction.guild.get_channel(
+                DelMatchOptions.staff_alert_channel_id()
+            ).send(
+                content=interaction.guild.get_role(
+                    DelMatchOptions.staff_role_id()
+                ).mention,
+                embed=announcement
             )
         except MatchCancellationException as err:
             __LOGGER__.error('Match cancellation prevented: %s', err.what)
@@ -167,17 +196,17 @@ class DeleteMatchCommand(commands.Cog):
         match: ScheduledMatch
     ) -> discord.Embed:
         return discord.Embed(
-            title='Success',
+            title='Match Cancelled',
             color=self.SUCCESS
         ).add_field(
-            name='Teams',
-            value='- __{}__ and __{}__'.format(
+            name='',
+            value='- **Teams** | __{}__ vs. __{}__'.format(
                 interaction.guild.get_role(match.team_1_id).name,
                 interaction.guild.get_role(match.team_2_id).name
             ),
             inline=False
         ).add_field(
-            name='Freed time',
-            value='- <t:{}:f>'.format(match.start_time),
+            name='',
+            value='- **Date** | <t:{}:f>'.format(match.start_time),
             inline=False
         )
