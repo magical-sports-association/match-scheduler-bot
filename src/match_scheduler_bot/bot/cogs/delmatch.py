@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 import logging
+import datetime
 
 from ...model.matchlist import MatchListRepository
 from ...model.rows import ScheduledMatch, MatchToCancel
@@ -77,6 +78,7 @@ class DeleteMatchCommand(commands.Cog):
 
     def __init__(self, matchdb: str):
         self.matchlist = MatchListRepository(matchdb)
+        self.remove_past_matches.start()
 
     @discord.app_commands.command(
         **DelMatchOptions.command_info()
@@ -200,13 +202,29 @@ class DeleteMatchCommand(commands.Cog):
             color=self.SUCCESS
         ).add_field(
             name='',
-            value='- **Teams** | __{}__ vs. __{}__'.format(
+            value='- **Teams:** __{}__ vs. __{}__'.format(
                 interaction.guild.get_role(match.team_1_id).name,
                 interaction.guild.get_role(match.team_2_id).name
             ),
             inline=False
         ).add_field(
             name='',
-            value='- **Date** | <t:{}:f>'.format(match.start_time),
+            value='- **Date:** <t:{}:f>'.format(match.start_time),
             inline=False
+        )
+
+    @tasks.loop(seconds=60)
+    async def remove_past_matches(self):
+        __LOGGER__.info('Task start: remove past matches from match list')
+
+        with self.matchlist as db:
+            purged = db.purge_expired(
+                round(
+                    datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+                )
+            )
+
+        __LOGGER__.info(
+            'Task end: removed %d matches from match list',
+            len(purged)
         )

@@ -240,13 +240,13 @@ class AddMatchCommand(commands.Cog):
             color=self.SUCCESS
         ).add_field(
             name='',
-            value='- **Teams** | __{}__ vs. __{}__'.format(
+            value='- **Teams:** __{}__ vs. __{}__'.format(
                 interaction.guild.get_role(match.team_1_id).name,
                 interaction.guild.get_role(match.team_2_id).name
             ),
             inline=False
         ).add_field(
             name='',
-            value='- **Date** | <t:{}:f>'.format(match.start_time),
+            value='- **Date:** <t:{}:f>'.format(match.start_time),
             inline=False
         )

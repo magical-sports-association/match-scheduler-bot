@@ -35,14 +35,28 @@ class GetMatchOptions:
             'description': 'Display a list of upcoming matches'
         }
 
+    @staticmethod
+    def bulletin_board_channel_id() -> int:
+        return 1327047213234524252
+
+    @staticmethod
+    def bulleten_board_server_id() -> int:
+        return 1319382525659058196
+
+    @staticmethod
+    def bulletin_board_follower_id() -> int:
+        return 1327087403319693363
+
 
 class GetMatchCommand(commands.Cog):
     SUCCESS = discord.Color.from_str('#2ECC71')
     ERROR = discord.Color.from_str('#E74C3C')
     INFO = discord.Color.from_str('#ffc01c')
 
-    def __init__(self, matchdb: str):
+    def __init__(self, matchdb: str, bot: commands.Bot):
         self.matchlist = MatchListRepository(matchdb)
+        self.bot = bot
+        self.announce_match_start.start()
 
     @discord.app_commands.command(
         **GetMatchOptions.command_info()
@@ -127,3 +141,77 @@ class GetMatchCommand(commands.Cog):
                     value='-# There are no matches scheduled at this time'
                 )
         return msg
+
+    def match_starts_soon(self, guild: discord.Guild, match: ScheduledMatch) -> discord.Embed:
+        return discord.Embed(
+            title='Match Starting Soon',
+            color=self.INFO
+        ).add_field(
+            name=f'Match starts in <t:{match.start_time}:R>',
+            value='__{}__ vs. __{}__'.format(
+                guild.get_role(match.team_1_id).mention,
+                guild.get_role(match.team_2_id).mention
+            ),
+            inline=False
+        ).add_field(
+            name='How to watch',
+            value='' +
+            '- Do this\n' +
+            '- Do that\n',
+            inline=False
+        ).add_field(
+            name='Team instructions',
+            value='' +
+            '- Do this\n' +
+            '- Do that\n',
+            inline=False
+        )
+
+    def _starts_in(self, **kwargs):
+        announce_time_start = datetime.timedelta(**kwargs)
+        announce_time_end = announce_time_start + \
+            datetime.timedelta(seconds=60)
+        now = round(
+            datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+        )
+
+        def is_soon(m: ScheduledMatch) -> bool:
+            time_diff = m.start_time - now
+            before = announce_time_start.total_seconds()
+            after = announce_time_end.total_seconds()
+            return before <= time_diff <= after
+
+        return is_soon
+
+    @tasks.loop(seconds=60)
+    async def announce_match_start(self):
+        __LOGGER__.info('Task start: announcing matches starting soon')
+
+        with self.matchlist as db:
+            upcoming = db.find_upcoming_matches(
+                not_before=round(
+                    datetime.datetime.now(
+                        tz=datetime.timezone.utc
+                    ).timestamp()
+                )
+            )
+
+        if server := self.bot.get_guild(GetMatchOptions.bulleten_board_server_id()):
+            embeds = [
+                self.match_starts_soon(server, m)
+                for m in filter(self._starts_in(minutes=30), upcoming)
+            ]
+            if embeds:
+                await server.get_channel(
+                    GetMatchOptions.bulletin_board_channel_id()
+                ).send(
+                    content=server.get_role(
+                        GetMatchOptions.bulletin_board_follower_id()
+                    ).mention,
+                    embeds=embeds
+                )
+
+        __LOGGER__.info(
+            'Task end: announced %d matches starting soon',
+            len(embeds)
+        )
