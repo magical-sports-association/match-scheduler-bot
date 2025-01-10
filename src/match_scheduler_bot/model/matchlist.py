@@ -87,6 +87,16 @@ class MatchListRepository:
                 'Match between provided teams is already scheduled'
             ) from err
 
+    def purge_expired(self, not_after: int) -> List[ScheduledMatch]:
+        return self._conn.execute(
+            '''
+                DELETE FROM matches
+                WHERE start_time < ?
+                RETURNING *;
+            ''',
+            (not_after,)
+        ).fetchall()
+
     def _create_matchlist_table(self) -> None:
         self._conn.execute(
             '''
