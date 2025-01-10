@@ -9,7 +9,7 @@ import logging
 import discord
 from discord.ext import commands
 
-from ..model import get_config
+from .. import get_config
 from .cogs import (
     AddMatchCommand,
     DeleteMatchCommand,
@@ -19,6 +19,8 @@ from .cogs import (
 
 __LOGGER__ = logging.getLogger(__name__)
 __BOT__ = None
+
+print(get_config())
 
 
 def use_bot() -> commands.Bot:

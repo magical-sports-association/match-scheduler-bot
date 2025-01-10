@@ -6,13 +6,9 @@
 
 import click
 import os.path
+import importlib
 
-from . import (
-    setup_logging,
-    setup_config,
-)
-from .model import get_config
-from .bot import use_bot
+from match_scheduler_bot import setup_config, setup_logging, get_config
 
 
 @click.command()
@@ -26,11 +22,12 @@ from .bot import use_bot
     type=click.Path(exists=True),
     default=f'{os.path.expanduser("~/.config/msa/logging.json")}'
 )
-def matchschedulerbot(bot_config, log_config):
+def main(bot_config, log_config):
     """Entry point to matchschedulerbot"""
     setup_logging(log_config)
     setup_config(bot_config)
-    use_bot().run(
+    bot = importlib.import_module('match_scheduler_bot.bot')
+    bot.use_bot().run(
         token=get_config().auth.token.get_secret_value(),
         log_handler=None
     )
