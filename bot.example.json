@@ -8,6 +8,83 @@
       "message_content": true
     }
   },
+  "cmds": {
+    "create_match": {
+      "invoke_with": "schedule-match",
+      "description": "Schedule a match between two opposing teams",
+      "parameters": {
+        "team_1": "Affiliated team",
+        "team_2": "Opposing team",
+        "year": "The year this match will take place",
+        "month": "The month this match will take place",
+        "day": "The day of the month this match will take place",
+        "hour": "The hour of day (in military time) this match will take place",
+        "minute": "The minute of the hour this match will take place",
+        "timezone": "The timezone identifier used to localize the provided date/time info"
+      },
+      "renames": {
+        "team_1": "team¹",
+        "team_2": "team²"
+      },
+      "allowlist": [
+        "staff",
+        "team captain"
+      ],
+      "respond": {
+        "public": {
+          "channel_id": 1,
+          "mention": []
+        },
+        "audit": {
+          "channel_id": 1,
+          "mention": []
+        }
+      }
+    },
+    "delete_match": {
+      "invoke_with": "cancel-match",
+      "description": "Cancel a match between two opposing teams",
+      "parameters": {
+        "team_1": "Affiliated team",
+        "team_2": "Opposing team"
+      },
+      "renames": {
+        "team_1": "team¹",
+        "team_2": "team²"
+      },
+      "allowlist": [
+        "staff",
+        "team captain"
+      ],
+      "respond": {
+        "public": {
+          "channel_id": 1,
+          "mention": []
+        },
+        "audit": {
+          "channel_id": 1,
+          "mention": []
+        }
+      }
+    },
+    "get_match": {
+      "invoke_with": "match-calendar",
+      "description": "Display a list of upcoming matches",
+      "parameters": {},
+      "renames": {},
+      "allowlist": null,
+      "respond": {
+        "public": {
+          "channel_id": 1,
+          "mention": []
+        },
+        "audit": {
+          "channel_id": 1,
+          "mention": []
+        }
+      }
+    }
+  },
   "data": {
     "database": "match.db"
   }
