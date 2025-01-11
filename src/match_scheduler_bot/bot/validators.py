@@ -45,3 +45,28 @@ def date_parts(
         raise InvalidStartTimeGiven(
             f'Invalid date: {str(err).removeprefix('ValueError: ')}'
         )
+
+
+def date_in_near_future(dt: datetime.datetime) -> datetime.datetime:
+    __LOGGER__.debug(
+        'Checking if given date is in the future by at most 1 year'
+    )
+    now = datetime.datetime.now(dt.tzinfo)
+    one_year_from_now = now + datetime.timedelta(days=365)
+
+    if dt <= now:
+        __LOGGER__.error('Given date %s is not in the future', dt.isoformat())
+        raise InvalidStartTimeGiven(
+            'Invalid date: must be in the future'
+        )
+
+    if dt > one_year_from_now:
+        __LOGGER__.error(
+            'Given date %s exceeds one year into the future',
+            dt.isoformat()
+        )
+        raise InvalidStartTimeGiven(
+            'Invalid date: must be at most 1 year into the future'
+        )
+
+    return dt

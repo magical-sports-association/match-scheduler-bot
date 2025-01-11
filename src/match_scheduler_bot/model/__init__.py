@@ -5,56 +5,43 @@
 '''
 
 from pathlib import Path
-from typing import Optional
-import logging
+from typing import List, Dict, Annotated, Optional
 
-from ..exceptions import (
-    BadConfigurationError,
-    MissingConfigurationError
-)
-from .config import (
-    BotConfig
-)
 
 import pydantic
 
-LOGGER = logging.getLogger(__name__)
-__CONFIG__: Optional[BotConfig] = None
+
+class BotAuthInfo(pydantic.BaseModel):
+    token: pydantic.SecretStr
+    intents: Dict[str, bool]
+    server: Annotated[int, pydantic.Field(gt=0)]
 
 
-def use_config(config: str | Path) -> None:
-    global __CONFIG__
-    try:
-        LOGGER.debug('Opening config file: %s', config)
-        with open(config) as f_in:
-            LOGGER.debug(
-                'Validating JSON structure conforms to config'
-            )
-            config = BotConfig.model_validate_json(
-                f_in.read(),
-                strict=True
-            )
-            LOGGER.debug('JSON structure is conforming')
-            __CONFIG__ = config
-    except FileNotFoundError as err:
-        LOGGER.error('Config file `%s` does not exist', config)
-        raise MissingConfigurationError(
-            f'No such configuration file: {config}'
-        ) from err
-    except pydantic.ValidationError as err:
-        LOGGER.error(
-            'Config file does not conform to config structure'
-        )
-        raise BadConfigurationError(
-            f'Bad configuration read: {err.error_count()} issues'
-        ) from err
+class CommandOutput(pydantic.BaseModel):
+    channel_id: Annotated[int, pydantic.Field(gt=0)]
+    mention: List[int]
 
 
-def get_config() -> BotConfig:
-    global __CONFIG__
-    if __CONFIG__ is None:
-        LOGGER.error(
-            'Attempted to read configuration object when not present'
-        )
-        raise MissingConfigurationError('No configuration loaded')
-    return __CONFIG__
+class CommandOutputDestination(pydantic.BaseModel):
+    public: Optional[CommandOutput]
+    audit: Optional[CommandOutput]
+
+
+class CommandSpec(pydantic.BaseModel):
+    invoke_with: Annotated[pydantic.StrictStr, pydantic.Field(min_length=1)]
+    description: Annotated[pydantic.StrictStr, pydantic.Field(min_length=1)]
+    parameters: Annotated[Dict[str, str], pydantic.Field(default={})]
+    renames: Annotated[Dict[str, str], pydantic.Field(default={})]
+    allowlist: Optional[List[int | str]]
+    respond: CommandOutputDestination
+
+
+class DataSources(pydantic.BaseModel):
+    database: str | Path
+    # timezones: Set[str]
+
+
+class BotConfig(pydantic.BaseModel):
+    auth: BotAuthInfo
+    cmds: Dict[str, CommandSpec]
+    data: DataSources

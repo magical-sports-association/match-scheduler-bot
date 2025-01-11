@@ -6,136 +6,87 @@
       "guild_messages": true,
       "members": true,
       "message_content": true
-    }
+    },
+    "server": 2
   },
-  "commands": [
-    {
-      "command_name": "addmatch",
+  "cmds": {
+    "create_match": {
+      "invoke_with": "schedule-match",
+      "description": "Schedule a match between two opposing teams",
       "parameters": {
-        "home_team": "The home team participant in the match to be scheduled",
-        "away_team": "The away team participant in the match to be scheduled",
-        "year": "The year the scheduled match is to take place",
-        "month": "The month the scheduled match is to take place",
-        "day": "The day of month the scheduled match is to take place",
-        "hour": "The hour of the day the match is to take place",
-        "minute": "The minute of the hour the match is to take place",
+        "team_1": "Affiliated team",
+        "team_2": "Opposing team",
+        "year": "The year this match will take place",
+        "month": "The month this match will take place",
+        "day": "The day of the month this match will take place",
+        "hour": "The hour of day (in military time) this match will take place",
+        "minute": "The minute of the hour this match will take place",
         "timezone": "The timezone identifier used to localize the provided date/time info"
       },
-      "direct_response_ok": {
-        "title": "Match scheduled successfully!",
-        "description": "",
-        "color": "#2ECC71",
-        "field_format": {
-          "name": "",
-          "value": "You have successfully scheduled a match",
-          "inline": false
-        },
-        "footer_format": {
-          "text": "Please check #bot-logs for the official confirmation or use `/showmatches` to set the updated match calendar"
-        }
+      "renames": {
+        "team_1": "team¹",
+        "team_2": "team²"
       },
-      "direct_response_not_ok": {
-        "title": "Match unabled to be scheduled",
-        "description": "There was a problem scheduling the match",
-        "color": "#E74C3C",
-        "field_format": {
-          "name": "",
-          "value": "Error: {}",
-          "inline": false
+      "allowlist": [
+        "staff",
+        "team captain"
+      ],
+      "respond": {
+        "public": {
+          "channel_id": 1,
+          "mention": []
         },
-        "footer_format": {
-          "text": "If you continue to experience issues scheduling a match, please alert staff"
-        }
-      },
-      "task_completed_message": {
-        "title": "Match Scheduled!",
-        "description": "",
-        "color": "#78b159",
-        "field_format": {
-          "name": "",
-          "value": "",
-          "inline": false
-        },
-        "footer_format": {
-          "text": ""
+        "audit": {
+          "channel_id": 1,
+          "mention": []
         }
       }
     },
-    {
-      "command_name": "delmatch",
+    "delete_match": {
+      "invoke_with": "cancel-match",
+      "description": "Cancel a match between two opposing teams",
       "parameters": {
-        "home": "The home team participant in the match to cancel",
-        "away": "The away team participant in the match to cancel"
+        "team_1": "Affiliated team",
+        "team_2": "Opposing team"
       },
-      "direct_response_ok": {
-        "title": "Match cancelled successfully!",
-        "description": "",
-        "color": "#2ECC71",
-        "field_format": {
-          "name": "",
-          "value": "The match between {} and {} has been cancelled",
-          "inline": false
-        },
-        "footer_format": {
-          "text": "Please check #bot-logs for the official confirmation or use `/showmatches` to set the updated match calendar"
-        }
+      "renames": {
+        "team_1": "team¹",
+        "team_2": "team²"
       },
-      "direct_response_not_ok": {
-        "title": "Match unabled to be cancelled",
-        "description": "There was a problem cancelling the match",
-        "color": "#E74C3C",
-        "field_format": {
-          "name": "",
-          "value": "Error: It is likely the match you are attempting to cancel (__{}__ vs. __{}__) does not exist",
-          "inline": false
+      "allowlist": [
+        "staff",
+        "team captain"
+      ],
+      "respond": {
+        "public": {
+          "channel_id": 1,
+          "mention": []
         },
-        "footer_format": {
-          "text": "If you continue to experience issues cancelling a match, please alert staff"
-        }
-      },
-      "task_completed_message": {
-        "title": "Match Cancelled!",
-        "description": "",
-        "color": "#dd2e44",
-        "field_format": {
-          "name": "",
-          "value": "",
-          "inline": false
-        },
-        "footer_format": {
-          "text": ""
+        "audit": {
+          "channel_id": 1,
+          "mention": []
         }
       }
     },
-    {
-      "command_name": "showmatches",
+    "get_match": {
+      "invoke_with": "match-calendar",
+      "description": "Display a list of upcoming matches",
       "parameters": {},
-      "direct_response_ok": {
-        "title": "Scheduled matches",
-        "description": "Here's a schedule of upcoming matches",
-        "color": "#3498DB",
-        "field_format": {
-          "name": "",
-          "value": "__{}__ vs. __{}__ @ {}",
-          "inline": false
+      "renames": {},
+      "allowlist": null,
+      "respond": {
+        "public": {
+          "channel_id": 1,
+          "mention": []
         },
-        "footer_format": {
-          "text": "There are no matches scheduled."
+        "audit": {
+          "channel_id": 1,
+          "mention": []
         }
-      },
-      "direct_response_not_ok": null,
-      "task_completed_message": null
+      }
     }
-  ],
-  "storage": {
-    "database": "match.db",
-    "usage_records": {
-      "log_to_text_channel": false,
-      "text_channel_id": 1
-    },
-    "task_records": {
-      "log_to_text_channel": true,
-      "text_channel_id": 1323869309537091594
-    }
+  },
+  "data": {
+    "database": "match.db"
   }
 }

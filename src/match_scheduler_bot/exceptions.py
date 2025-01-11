@@ -8,6 +8,13 @@
 class MatchSchedulerBotException(Exception):
     '''Base exception for the bot package'''
 
+    def __init__(self, msg: str):
+        self._reason = msg
+
+    @property
+    def what(self) -> str:
+        return self._reason
+
 
 class BotConfigurationError(MatchSchedulerBotException):
     '''Exception for specifying issues with bot configuration'''
@@ -37,5 +44,13 @@ class DuplicatedMatchDetected(MatchSchedulingException):
     '''Exception indicating a match involving the given teams already exists'''
 
 
-class MatchNotInsertedToSchedule(MatchSchedulingException):
-    '''Exception indicating a match insertion failed due to a database issue'''
+class MatchScheduleNotObtained(MatchSchedulerBotException):
+    '''Exception indicating current match list could not be obtained'''
+
+
+class MatchCancellationException(MatchSchedulerBotException):
+    '''Exception indicating an issue when attempting to cancel a match'''
+
+
+class CancellingNonexistantMatch(MatchCancellationException):
+    '''Exception raised when cancelling a match that does not exist'''
