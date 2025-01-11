@@ -12,6 +12,7 @@ from typing import List
 from ...model.matchlist import MatchListRepository
 from ...model.rows import ScheduledMatch
 from ...exceptions import MatchScheduleNotObtained
+from ... import get_config
 
 import discord
 from discord.ext import commands
@@ -19,33 +20,7 @@ from discord.ext import tasks
 
 
 __LOGGER__ = logging.getLogger(__name__)
-
-
-class GetMatchOptions:
-    def __init__(self):
-        raise TypeError(
-            f'{self.__class__.__name__} cannot be instantiated'
-        )
-
-    @staticmethod
-    def command_info() -> dict:
-        __LOGGER__.debug('Retrieving command information')
-        return {
-            'name': 'match-calendar',
-            'description': 'Display a list of upcoming matches'
-        }
-
-    @staticmethod
-    def bulletin_board_channel_id() -> int:
-        return 1327047213234524252
-
-    @staticmethod
-    def bulleten_board_server_id() -> int:
-        return 1319382525659058196
-
-    @staticmethod
-    def bulletin_board_follower_id() -> int:
-        return 1327087403319693363
+__SPEC__ = get_config().cmds["get_match"]
 
 
 class GetMatchCommand(commands.Cog):
@@ -59,7 +34,8 @@ class GetMatchCommand(commands.Cog):
         self.announce_match_start.start()
 
     @discord.app_commands.command(
-        **GetMatchOptions.command_info()
+        name=__SPEC__.invoke_with,
+        description=__SPEC__.description
     )
     async def do_it(self, interaction: discord.Interaction):
         try:
@@ -196,17 +172,17 @@ class GetMatchCommand(commands.Cog):
                 )
             )
 
-        if server := self.bot.get_guild(GetMatchOptions.bulleten_board_server_id()):
+        if server := self.bot.get_guild(get_config().auth.server):
             embeds = [
                 self.match_starts_soon(server, m)
                 for m in filter(self._starts_in(minutes=30), upcoming)
             ]
             if embeds:
                 await server.get_channel(
-                    GetMatchOptions.bulletin_board_channel_id()
+                    __SPEC__.respond.public.channel_id
                 ).send(
                     content=server.get_role(
-                        GetMatchOptions.bulletin_board_follower_id()
+                        __SPEC__.respond.public.mention[0]
                     ).mention,
                     embeds=embeds
                 )

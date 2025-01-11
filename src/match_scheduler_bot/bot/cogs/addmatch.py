@@ -13,6 +13,7 @@ from ...model.rows import MatchToSchedule, ScheduledMatch
 from ...exceptions import (
     MatchSchedulingException
 )
+from ... import get_config
 from ..autocomplete import autocomplete_timezone
 from ..validators import (
     date_in_near_future,
@@ -24,70 +25,7 @@ from discord.ext import commands
 
 
 __LOGGER__ = logging.getLogger(__name__)
-
-
-class AddMatchOptions:
-    def __init__(self):
-        raise TypeError(
-            f'{self.__class__.__name__} cannot be instantiated'
-        )
-
-    @staticmethod
-    def command_info() -> dict:
-        __LOGGER__.debug('Retrieving command information')
-        return {
-            'name': 'schedule-match',
-            'description': 'Schedule a match between two opposing teams'
-        }
-
-    @staticmethod
-    def parameter_descriptions() -> dict:
-        __LOGGER__.debug('Retrieving parameter descriptions')
-        return {
-            'team_1': 'Affiliated team',
-            'team_2': 'Opposing team',
-            'year': 'The year this match will take place',
-            'month': 'The month this match will take place',
-            'day': 'The day of the month this match will take place',
-            'hour': 'The hour of day (in military time) this match will take place',
-            'minute': 'The minute of the hour this match will take place',
-            'timezone': 'The timezone identifier used to localize the provided date/time info'
-        }
-
-    @staticmethod
-    def parameter_renames() -> dict:
-        __LOGGER__.debug('Retrieving parameter renames')
-        return {
-            'team_1': 'team¹',
-            'team_2': 'team²'
-        }
-
-    @staticmethod
-    def autocomplete_callbacks() -> dict:
-        __LOGGER__.debug('Retrieving autocomplete callbacks')
-        return {
-            'timezone': autocomplete_timezone
-        }
-
-    @staticmethod
-    def allowlist() -> list:
-        __LOGGER__.debug('Retrieving allowlist')
-        return [
-            'team captain',
-            'staff'
-        ]
-
-    @staticmethod
-    def bulletin_board_channel_id() -> int:
-        return 1327047213234524252
-
-    @staticmethod
-    def staff_alert_channel_id() -> int:
-        return 1327047313482317918
-
-    @staticmethod
-    def staff_role_id() -> int:
-        return 1320147480482021416
+__SPEC__ = get_config().cmds["create_match"]
 
 
 class AddMatchCommand(commands.Cog):
@@ -99,18 +37,21 @@ class AddMatchCommand(commands.Cog):
         self.matchlist = MatchListRepository(matchdb)
 
     @discord.app_commands.command(
-        **AddMatchOptions.command_info()
+        name=__SPEC__.invoke_with,
+        description=__SPEC__.description
     )
     @discord.app_commands.describe(
-        **AddMatchOptions.parameter_descriptions()
+        **__SPEC__.parameters
     )
     @discord.app_commands.rename(
-        **AddMatchOptions.parameter_renames()
+        **__SPEC__.renames
     )
     @discord.app_commands.autocomplete(
-        **AddMatchOptions.autocomplete_callbacks()
+        timezone=autocomplete_timezone
     )
-    @discord.app_commands.checks.has_any_role(*AddMatchOptions.allowlist())
+    @discord.app_commands.checks.has_any_role(
+        *__SPEC__.allowlist
+    )
     async def do_it(
         self,
         interaction: discord.Interaction,
@@ -160,16 +101,16 @@ class AddMatchCommand(commands.Cog):
             )
             __LOGGER__.info('Publishing schuduled match to public bulletin')
             await interaction.guild.get_channel(
-                AddMatchOptions.bulletin_board_channel_id()
+                __SPEC__.respond.public.channel_id
             ).send(
                 embed=announcement
             )
             __LOGGER__.info('Alerting staff of new scheduled match')
             await interaction.guild.get_channel(
-                AddMatchOptions.staff_alert_channel_id()
+                __SPEC__.respond.audit.channel_id
             ).send(
                 content=interaction.guild.get_role(
-                    AddMatchOptions.staff_role_id()
+                    __SPEC__.respond.audit.mention[0]
                 ).mention,
                 embed=announcement
             )

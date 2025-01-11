@@ -11,6 +11,7 @@ import datetime
 from ...model.matchlist import MatchListRepository
 from ...model.rows import ScheduledMatch, MatchToCancel
 from ...exceptions import MatchCancellationException
+from ... import get_config
 
 import discord
 from discord.ext import commands
@@ -18,57 +19,7 @@ from discord.ext import tasks
 
 
 __LOGGER__ = logging.getLogger(__name__)
-
-
-class DelMatchOptions:
-    def __init__(self):
-        raise TypeError(
-            f'{self.__class__.__name__} cannot be instantiated'
-        )
-
-    @staticmethod
-    def command_info() -> dict:
-        __LOGGER__.debug('Retrieving command information')
-        return {
-            'name': 'cancel-match',
-            'description': 'Cancel a match between two opposing teams'
-        }
-
-    @staticmethod
-    def parameter_descriptions() -> dict:
-        __LOGGER__.debug('Retrieving parameter descriptions')
-        return {
-            'team_1': 'Affiliated team',
-            'team_2': 'Opposing team',
-        }
-
-    @staticmethod
-    def paremeter_renames() -> dict:
-        __LOGGER__.debug('Retrieving parameter renames')
-        return {
-            'team_1': 'team¹',
-            'team_2': 'team²'
-        }
-
-    @staticmethod
-    def allowlist() -> list:
-        __LOGGER__.debug('Retrieving allowlist')
-        return [
-            'team captain',
-            'staff'
-        ]
-
-    @staticmethod
-    def bulletin_board_channel_id() -> int:
-        return 1327047213234524252
-
-    @staticmethod
-    def staff_alert_channel_id() -> int:
-        return 1327047313482317918
-
-    @staticmethod
-    def staff_role_id() -> int:
-        return 1320147480482021416
+__SPEC__ = get_config().cmds["delete_match"]
 
 
 class DeleteMatchCommand(commands.Cog):
@@ -81,15 +32,18 @@ class DeleteMatchCommand(commands.Cog):
         self.remove_past_matches.start()
 
     @discord.app_commands.command(
-        **DelMatchOptions.command_info()
+        name=__SPEC__.invoke_with,
+        description=__SPEC__.description
     )
     @discord.app_commands.describe(
-        **DelMatchOptions.parameter_descriptions()
+        **__SPEC__.parameters
     )
     @discord.app_commands.rename(
-        **DelMatchOptions.paremeter_renames()
+        **__SPEC__.renames
     )
-    @discord.app_commands.checks.has_any_role(*DelMatchOptions.allowlist())
+    @discord.app_commands.checks.has_any_role(
+        *__SPEC__.allowlist
+    )
     async def do_it(
         self,
         interaction: discord.Interaction,
@@ -122,16 +76,16 @@ class DeleteMatchCommand(commands.Cog):
             )
             __LOGGER__.info('Publishing match cancellation to public bulletin')
             await interaction.guild.get_channel(
-                DelMatchOptions.bulletin_board_channel_id()
+                __SPEC__.respond.public.channel_id
             ).send(
                 embed=announcement
             )
             __LOGGER__.info('Alerting staff of cancelled match')
             await interaction.guild.get_channel(
-                DelMatchOptions.staff_alert_channel_id()
+                __SPEC__.respond.audit.channel_id
             ).send(
                 content=interaction.guild.get_role(
-                    DelMatchOptions.staff_role_id()
+                    __SPEC__.respond.audit.mention[0]
                 ).mention,
                 embed=announcement
             )
