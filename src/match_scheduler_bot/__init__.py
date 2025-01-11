@@ -19,7 +19,7 @@ import pydantic
 
 __LOGGER__ = logging.getLogger(__name__)
 __CONFIG__: Optional[BotConfig] = None
-__VERSION__ = (0, 1, 0)
+__VERSION__ = (0, 1, 1)
 
 
 def setup_logging(config: str) -> None:
