@@ -14,6 +14,7 @@ import pydantic
 class BotAuthInfo(pydantic.BaseModel):
     token: pydantic.SecretStr
     intents: Dict[str, bool]
+    server: Annotated[int, pydantic.Field(gt=0)]
 
 
 class CommandOutput(pydantic.BaseModel):

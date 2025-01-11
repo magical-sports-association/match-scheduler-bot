@@ -6,7 +6,8 @@
       "guild_messages": true,
       "members": true,
       "message_content": true
-    }
+    },
+    "server": 2
   },
   "cmds": {
     "create_match": {
