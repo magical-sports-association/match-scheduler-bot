@@ -19,6 +19,14 @@ from ..validators import (
     date_in_near_future,
     date_parts
 )
+from ..responses.feedback import (
+    AcknowledgeCommandUsage,
+    CommandSucceeded,
+    CommandFailed
+)
+from ..responses.announcements import (
+    PublicLog,
+)
 
 import discord
 from discord.ext import commands
@@ -29,9 +37,6 @@ __SPEC__ = get_config().cmds["create_match"]
 
 
 class AddMatchCommand(commands.Cog):
-    SUCCESS = discord.Color.from_str('#2ECC71')
-    ERROR = discord.Color.from_str('#E74C3C')
-    INFO = discord.Color.from_str('#ffc01c')
 
     def __init__(self, matchdb: str):
         self.matchlist = MatchListRepository(matchdb)
@@ -66,8 +71,13 @@ class AddMatchCommand(commands.Cog):
     ):
         try:
             await interaction.response.send_message(
-                content=self.ack_cmd_msg.format(team_1.name, team_2.name),
-                ephemeral=True
+                content=AcknowledgeCommandUsage.create_match_used(
+                    used_by=interaction.user,
+                    friend=team_1,
+                    foe=team_2
+                ),
+                ephemeral=True,
+                delete_after=1
             )
             __LOGGER__.info(
                 '/%s invoked by user %s',
@@ -94,10 +104,16 @@ class AddMatchCommand(commands.Cog):
                     )
                 )
             __LOGGER__.info('Match successfully added')
-            announcement = self.cmd_ok_msg(interaction, scheduled)
             await interaction.followup.send(
-                embed=announcement,
+                embed=CommandSucceeded.created_match(
+                    interaction,
+                    scheduled
+                ),
                 ephemeral=True
+            )
+            announcement = PublicLog.match_scheduled(
+                interaction,
+                scheduled
             )
             __LOGGER__.info('Publishing schuduled match to public bulletin')
             await interaction.guild.get_channel(
@@ -117,7 +133,7 @@ class AddMatchCommand(commands.Cog):
         except MatchSchedulingException as err:
             __LOGGER__.error('Match scheduling prevented: %s', err.what)
             await interaction.followup.send(
-                embed=self.cmd_err_msg(err),
+                embed=CommandFailed.managed_failure(err),
                 ephemeral=True
             )
 
@@ -134,60 +150,19 @@ class AddMatchCommand(commands.Cog):
                 interaction.command.name
             )
             await interaction.response.send_message(
-                content=self.cmd_forbidden.format(error.missing_roles),
+                content=CommandFailed.forbidden(
+                    interaction,
+                    [
+                        interaction.guild.get_role(r)
+                        for r in __SPEC__.allowlist
+                        if interaction.guild.get_role(r) is not None
+                    ]
+                ),
                 ephemeral=True
             )
         else:
             __LOGGER__.exception('Unexpected error\n', error)
             await interaction.response.send_message(
-                content=self.cmd_exc_msg,
+                content=CommandFailed.unexpected_failure(),
                 ephemeral=True
             )
-
-    @property
-    def ack_cmd_msg(self) -> str:
-        return 'Attempting to schedule a match between __{}__ and __{}__ ...'
-
-    @property
-    def cmd_forbidden(self) -> str:
-        return '**Sorry**\n' + \
-            'You do __NOT__ have permission to use this command.\n' + \
-            'You must have at least one of these roles: {}.\n'
-
-    @property
-    def cmd_exc_msg(self) -> str:
-        return 'Something has gone terribly wrong!\n' + \
-            'Calm yourself. You didn\'t break anything.\n' + \
-            'My programming did not account for what just happened.\n' + \
-            'Please alert staff if this continues.'
-
-    def cmd_err_msg(self, error: MatchSchedulingException) -> discord.Embed:
-        return discord.Embed(
-            title='Error',
-            color=self.ERROR
-        ).add_field(
-            name='What went wrong',
-            value=f'- {error.what}',
-            inline=False
-        )
-
-    def cmd_ok_msg(
-        self,
-        interaction: discord.Interaction,
-        match: ScheduledMatch
-    ) -> discord.Embed:
-        return discord.Embed(
-            title='Match Scheduled',
-            color=self.SUCCESS
-        ).add_field(
-            name='',
-            value='- **Teams:** __{}__ vs. __{}__'.format(
-                interaction.guild.get_role(match.team_1_id).name,
-                interaction.guild.get_role(match.team_2_id).name
-            ),
-            inline=False
-        ).add_field(
-            name='',
-            value='- **Date:** <t:{}:f>'.format(match.start_time),
-            inline=False
-        )
