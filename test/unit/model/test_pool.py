@@ -33,7 +33,6 @@ def custom_row_factory():
 
 @pytest.mark.asyncio
 async def test_new_pool_attributes_are_as_specified(apool):
-    print(apool)
     assert apool.available_connections == 3
     assert apool.database_path == ':memory:'
 

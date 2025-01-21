@@ -26,6 +26,14 @@ class AsyncConnectionPool:
         self._dbpath = path
         self._sz = pool_size
         self._pool = None
+        __LOGGER__.debug(
+            'Connections in this pool will use this file: %s',
+            self._dbpath
+        )
+        __LOGGER__.debug(
+            'There will be %d connections in this pool',
+            self._sz
+        )
 
     @property
     def available_connections(self) -> int:
@@ -35,6 +43,7 @@ class AsyncConnectionPool:
             Returns:
                 [int]: the number of connections
         '''
+        __LOGGER__.debug('Requested read of number of available connections')
         return self._pool.qsize() if self._pool else self._sz
 
     @property
@@ -44,12 +53,14 @@ class AsyncConnectionPool:
             Returns:
                 [str]: path of the connections in this pool
         '''
+        __LOGGER__.debug('Requested read of the dbfile for this pool')
         return self._dbpath
 
     async def _initialize_pool(self) -> None:
         '''
             Asyncronous initialization of connections in this pool
         '''
+        __LOGGER__.info('Filling the pool with connection objects')
         self._pool = asyncio.Queue(maxsize=self._sz)
         for _ in range(self._sz):
             self._pool.put_nowait(
@@ -67,7 +78,9 @@ class AsyncConnectionPool:
         if not self._pool:
             await self._initialize_pool()
 
+        __LOGGER__.info('Retrieving next available connection')
         conn = await self._pool.get()
+        __LOGGER__.info('Setting the connection\'s row factory')
         conn.row_factory = row_factory
         return conn
 
@@ -79,14 +92,19 @@ class AsyncConnectionPool:
             Returns:
                 None
         '''
+        __LOGGER__.info('Returning the given connection to the pool')
         await self._pool.put(connection)
 
     async def destroy(self) -> None:
         '''
             Close all connections in this pool
         '''
+        __LOGGER__.info('Closing all connections in this pool')
         while self._pool and not self._pool.empty():
             conn = await self._pool.get()
             await conn.close()
 
+        __LOGGER__.debug(
+            'Set pool attribute to `None` to avoid a dangling pool'
+        )
         self._pool = None
