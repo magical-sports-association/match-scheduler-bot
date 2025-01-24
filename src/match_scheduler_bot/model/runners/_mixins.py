@@ -1,5 +1,5 @@
 '''
-    :module_name: _mixin
+    :module_name: _mixins
     :module_summary: the base class of all query runner classes
     :module_author: CountTails
 '''
@@ -15,7 +15,7 @@ import aiosqlite
 __LOGGER__ = logging.getLogger(__name__)
 
 
-class QueryRunnerMixin:
+class TransactionalMixin:
 
     @asynccontextmanager
     async def do_transaction(
@@ -35,14 +35,14 @@ class QueryRunnerMixin:
             __LOGGER__.debug(
                 'Transaction stopped; rolling back',
             )
-            conn.rollback()
+            await conn.rollback()
             __LOGGER__.error('Reason: %s', str(err))
             raise err
         else:
             __LOGGER__.debug(
                 'Transaction concluded without errors; committing'
             )
-            conn.commit()
+            await conn.commit()
         finally:
             __LOGGER__.debug('Cleaning up Transaction.')
             if conn is not None:
