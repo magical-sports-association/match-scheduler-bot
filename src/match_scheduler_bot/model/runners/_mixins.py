@@ -13,16 +13,34 @@ from ..pool import AsyncConnectionPool
 import aiosqlite
 
 __LOGGER__ = logging.getLogger(__name__)
+type RowFactoryFn = Callable[[aiosqlite.Cursor, aiosqlite.Row], object]
 
 
 class TransactionalMixin:
+
+    '''
+        Mixin class that provides an asynccontextmanager to manage transactions
+        Classes that manage a domain of database interactions for the app
+        can inherit from this mixin to automatically include transactions
+    '''
 
     @asynccontextmanager
     async def do_transaction(
         self,
         pool: AsyncConnectionPool,
-        row_factory: Callable[[aiosqlite.Cursor, aiosqlite.Row], object]
+        row_factory: RowFactoryFn
     ):
+        '''
+            A decorated async generator that provides transaction management
+
+            Parameters:
+                pool [AsyncConnectionPool]: pool to borrow a connection from
+                row_factory [RowFactoryFn]: factory function for row conversion
+            Yields:
+                conn [aiosqlite.Connection] borrowed connection to run queries
+            Raises:
+                err [aiosqlite.Error] database error halting transaction
+        '''
         __LOGGER__.debug('Beginning new transaction...')
         conn = None
         try:

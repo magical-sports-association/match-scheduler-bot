@@ -8,7 +8,7 @@ import logging
 from dataclasses import asdict
 from typing import List, Callable
 
-from ._mixins import TransactionalMixin
+from ._mixins import TransactionalMixin, RowFactoryFn
 from ..pool import AsyncConnectionPool
 from ..rows import (
     MatchToSchedule,
@@ -26,21 +26,57 @@ __LOGGER__ = logging.getLogger(__name__)
 
 
 class MatchlistQueryRunner(TransactionalMixin):
+
+    '''
+        Query runner class handling database interactions in the
+        matchlist domain area of the application
+    '''
+
     def __init__(
         self,
         pool: AsyncConnectionPool,
-        row_factory: Callable[[aiosqlite.Cursor,
-                               aiosqlite.Row], object] = aiosqlite.Row
+        row_factory: RowFactoryFn = aiosqlite.Row
     ):
+        '''
+            Initializes attributes for the matchlist query runner instance
+
+            Parameters:
+                pool [AsyncConnectionPool]: pool to borrow connections from
+                row_factory [RowFactoryFn]: factory function for row conversion
+
+            Returns:
+                None
+        '''
         self._pool = pool
         self._row_factory = row_factory
 
     async def create_matchlist_table(self) -> None:
+        '''
+            Coroutine to ensure existant of the required table
+
+            Parameters:
+                None
+
+            Returns:
+                None
+        '''
         async with self.do_transaction(self._pool, self._row_factory) as conn:
             __LOGGER__.info('Creating matchlist table if it does not exists')
             await conn.execute(self.create_table_stmt)
 
-    async def delete_past_matches(self, not_after: int) -> List[ScheduledMatch]:
+    async def delete_past_matches(
+        self,
+        not_after: int
+    ) -> List[ScheduledMatch]:
+        '''
+            Coroutine that removes matches that start before a given timestamp
+
+            Parameters:
+                not_after [int]: unix timestamp used as the cutoff for deletion
+
+            Returns
+                [List[ScheduledMatch]]: list of matches removed from the table
+        '''
         async with self.do_transaction(self._pool, self._row_factory) as conn:
             __LOGGER__.info(
                 'Deleting rows with timestamp before %d',
@@ -53,8 +89,23 @@ class MatchlistQueryRunner(TransactionalMixin):
             return await purged_cursor.fetchall()
 
     async def schedule_match(self, match: MatchToSchedule) -> ScheduledMatch:
+        '''
+            Coroutine that inserts a proposed match to the matchlist table
+
+            Parameters:
+                match [MatchToSchedule] object holding proposed match details
+
+            Returns:
+                [ScheduledMatch] object holding confirmed match details
+
+            Raises:
+                DuplicatedMatchDetected: if proposed match is a duplicate match
+        '''
         try:
-            async with self.do_transaction(self._pool, self._row_factory) as conn:
+            async with self.do_transaction(
+                self._pool,
+                self._row_factory
+            ) as conn:
                 __LOGGER__.info(
                     'Attempting to schedule match at %d',
                     match.proposed_start_timestamp
@@ -74,6 +125,18 @@ class MatchlistQueryRunner(TransactionalMixin):
             ) from err
 
     async def cancel_match(self, match: MatchToCancel) -> ScheduledMatch:
+        '''
+            Coroutine that removes a specific match from the matchlist table
+
+            Parameters:
+                match [MatchToCancel] object holding match cancellation request
+
+            Returns:
+                [ScheduledMatch] object holding cancelled match details
+
+            Raises:
+                [CancellingNonexistantMatch] if cancelling a match that DNE
+        '''
         async with self.do_transaction(self._pool, self._row_factory) as conn:
             __LOGGER__.info(
                 'Attempting the cancel a match between %d and %d',
@@ -104,6 +167,16 @@ class MatchlistQueryRunner(TransactionalMixin):
         page_size: int = 10,
         page_num: int = 0
     ) -> List[ScheduledMatch]:
+        '''
+            Coroutine that fetches the upcoming matches in the matchlist
+
+            Parameters:
+                not_before [int]: unix timestamp of earliest match considered
+                page_size [int]: result size limiter. Defaults to 10
+                page_num [int]: result page count. Defaults to 0
+            Returns:
+                [List[ScheduledMatch]] upcoming match list sorted by start time
+        '''
         async with self.do_transaction(self._pool, self._row_factory) as conn:
             __LOGGER__.info(
                 'Selecting rows with timestampt after %d',
