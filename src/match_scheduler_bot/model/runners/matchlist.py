@@ -42,7 +42,7 @@ class MatchlistQueryRunner(TransactionalMixin):
             Returns:
                 None
         '''
-        async with self.do_transaction(self._pool, self._row_factory) as conn:
+        async with self as conn:
             __LOGGER__.info('Creating matchlist table if it does not exists')
             await conn.execute(self.create_table_stmt)
 
@@ -59,7 +59,7 @@ class MatchlistQueryRunner(TransactionalMixin):
             Returns
                 [List[ScheduledMatch]]: list of matches removed from the table
         '''
-        async with self.do_transaction(self._pool, self._row_factory) as conn:
+        async with self as conn:
             __LOGGER__.info(
                 'Deleting rows with timestamp before %d',
                 not_after
@@ -84,10 +84,7 @@ class MatchlistQueryRunner(TransactionalMixin):
                 DuplicatedMatchDetected: if proposed match is a duplicate match
         '''
         try:
-            async with self.do_transaction(
-                self._pool,
-                self._row_factory
-            ) as conn:
+            async with self as conn:
                 __LOGGER__.info(
                     'Attempting to schedule match at %d',
                     match.proposed_start_timestamp
@@ -119,7 +116,7 @@ class MatchlistQueryRunner(TransactionalMixin):
             Raises:
                 [CancellingNonexistantMatch] if cancelling a match that DNE
         '''
-        async with self.do_transaction(self._pool, self._row_factory) as conn:
+        async with self as conn:
             __LOGGER__.info(
                 'Attempting the cancel a match between %d and %d',
                 match.team_1_id,
@@ -159,7 +156,7 @@ class MatchlistQueryRunner(TransactionalMixin):
             Returns:
                 [List[ScheduledMatch]] upcoming match list sorted by start time
         '''
-        async with self.do_transaction(self._pool, self._row_factory) as conn:
+        async with self as conn:
             __LOGGER__.info(
                 'Selecting rows with timestampt after %d',
                 not_before
