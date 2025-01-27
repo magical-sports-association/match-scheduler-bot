@@ -6,10 +6,9 @@
 
 import logging
 from dataclasses import asdict
-from typing import List, Callable
+from typing import List
 
-from ._mixins import TransactionalMixin, RowFactoryFn
-from ..pool import AsyncConnectionPool
+from ._mixins import TransactionalMixin
 from ..rows import (
     MatchToSchedule,
     ScheduledMatch,
