@@ -24,44 +24,60 @@ class TransactionalMixin:
         can inherit from this mixin to automatically include transactions
     '''
 
-    @asynccontextmanager
-    async def do_transaction(
+    def __init__(
         self,
         pool: AsyncConnectionPool,
-        row_factory: RowFactoryFn
+        row_factory: RowFactoryFn = aiosqlite.Row
     ):
         '''
-            A decorated async generator that provides transaction management
+            Initializes attributes for the matchlist query runner instance
 
             Parameters:
-                pool [AsyncConnectionPool]: pool to borrow a connection from
+                pool [AsyncConnectionPool]: pool to borrow connections from
                 row_factory [RowFactoryFn]: factory function for row conversion
-            Yields:
-                conn [aiosqlite.Connection] borrowed connection to run queries
-            Raises:
-                err [aiosqlite.Error] database error halting transaction
+
+            Returns:
+                None
         '''
-        __LOGGER__.debug('Beginning new transaction...')
-        conn = None
-        try:
-            conn = await pool.acquire(row_factory)
+        self._pool = pool
+        self._row_factory = row_factory
+        self._conn = None
+
+    async def __aenter__(self) -> aiosqlite.Connection:
+        '''
+            Magic method to operate sql transactions using a with statement
+
+            Parameters:
+                None
+            Returns:
+                [aiosqlite.Connection] connection to execute transaction on
+        '''
+        __LOGGER__.debug('Start new transaction...')
+        self._conn = await self._pool.acquire(self._row_factory)
+        __LOGGER__.debug('Acquired connection from pool')
+        return self._conn
+
+    async def __aexit__(self, exc_type, exc_value, traceback) -> None:
+        '''
+            Magic method to conclude sql transactions based on the outcome
+
+            Parameters:
+                exc_type [Exception]: class of exception raised in transaction
+                exc_value [Exception]: instance of raised exception
+                traceback: traceback info of the raised exception
+            Returns:
+                None
+        '''
+        if exc_value:
             __LOGGER__.debug(
-                'Successfully acquired a connection from given pool'
+                'Rolling back because a problem occurred in the transaction'
             )
-            yield conn
-        except aiosqlite.Error as err:
-            __LOGGER__.debug(
-                'Transaction stopped; rolling back',
-            )
-            await conn.rollback()
-            __LOGGER__.error('Reason: %s', str(err))
-            raise err
+            await self._conn.rollback()
+            __LOGGER__.error('Reason: %s', str(exc_value))
         else:
-            __LOGGER__.debug(
-                'Transaction concluded without errors; committing'
-            )
-            await conn.commit()
-        finally:
-            __LOGGER__.debug('Cleaning up Transaction.')
-            if conn is not None:
-                await pool.release(conn)
+            __LOGGER__.debug('Transaction concluded without a problem')
+            await self._conn.commit()
+
+        __LOGGER__.debug('Cleaning up transaction')
+        await self._pool.release(self._conn)
+        self._conn = None

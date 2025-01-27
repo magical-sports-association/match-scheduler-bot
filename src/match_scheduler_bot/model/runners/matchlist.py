@@ -32,24 +32,6 @@ class MatchlistQueryRunner(TransactionalMixin):
         matchlist domain area of the application
     '''
 
-    def __init__(
-        self,
-        pool: AsyncConnectionPool,
-        row_factory: RowFactoryFn = aiosqlite.Row
-    ):
-        '''
-            Initializes attributes for the matchlist query runner instance
-
-            Parameters:
-                pool [AsyncConnectionPool]: pool to borrow connections from
-                row_factory [RowFactoryFn]: factory function for row conversion
-
-            Returns:
-                None
-        '''
-        self._pool = pool
-        self._row_factory = row_factory
-
     async def create_matchlist_table(self) -> None:
         '''
             Coroutine to ensure existant of the required table
