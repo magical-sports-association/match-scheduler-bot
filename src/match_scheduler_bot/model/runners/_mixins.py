@@ -5,7 +5,6 @@
 '''
 
 import logging
-from contextlib import asynccontextmanager
 from typing import Callable
 
 from ..pool import AsyncConnectionPool

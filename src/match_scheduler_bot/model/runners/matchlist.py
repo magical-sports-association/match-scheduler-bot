@@ -125,7 +125,7 @@ class MatchlistQueryRunner(TransactionalMixin):
                 self.cancel_match_query,
                 (match.team_1_id, match.team_2_id)
             )
-            cancelled_match = cancelled_cursor.fetchone()
+            cancelled_match = await cancelled_cursor.fetchone()
 
         if cancelled_match:
             __LOGGER__.info(
