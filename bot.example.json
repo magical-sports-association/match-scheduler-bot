@@ -87,6 +87,7 @@
     }
   },
   "data": {
-    "database": "match.db"
+    "database": "match.db",
+    "messages": "messages/"
   }
 }

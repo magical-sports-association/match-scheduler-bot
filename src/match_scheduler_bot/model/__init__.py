@@ -38,6 +38,7 @@ class CommandSpec(pydantic.BaseModel):
 
 class DataSources(pydantic.BaseModel):
     database: str | Path
+    messages: str | Path
     # timezones: Set[str]
 
 
