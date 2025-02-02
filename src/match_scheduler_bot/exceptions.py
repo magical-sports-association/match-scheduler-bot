@@ -54,3 +54,7 @@ class MatchCancellationException(MatchSchedulerBotException):
 
 class CancellingNonexistantMatch(MatchCancellationException):
     '''Exception raised when cancelling a match that does not exist'''
+
+
+class MissingMessageFormat(BotConfigurationError):
+    '''Exception raised when a requested message format does not exixt'''
