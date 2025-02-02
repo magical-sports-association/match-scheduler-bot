@@ -123,6 +123,7 @@ class FileCacheProvider:
             new_cached = CachedContents(int(), str())
             self._cache[filename] = new_cached
             self._update_cache(new_cached, contents_from_disk)
+            return contents_from_disk
 
     async def _refresh(self, file: Path) -> str:
         '''
