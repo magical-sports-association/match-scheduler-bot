@@ -108,3 +108,9 @@ class AsyncConnectionPool:
             'Set pool attribute to `None` to avoid a dangling pool'
         )
         self._pool = None
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, traceback) -> None:
+        await self.destroy()

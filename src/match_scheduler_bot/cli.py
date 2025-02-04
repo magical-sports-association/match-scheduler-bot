@@ -6,9 +6,9 @@
 
 import click
 import os.path
-import importlib
+import asyncio
 
-from match_scheduler_bot import setup_config, setup_logging, get_config
+from match_scheduler_bot.bot import startup
 
 
 @click.command()
@@ -24,10 +24,4 @@ from match_scheduler_bot import setup_config, setup_logging, get_config
 )
 def main(bot_config, log_config):
     """Entry point to matchschedulerbot"""
-    setup_logging(log_config)
-    setup_config(bot_config)
-    bot = importlib.import_module('match_scheduler_bot.bot')
-    bot.use_bot().run(
-        token=get_config().auth.token.get_secret_value(),
-        log_handler=None
-    )
+    asyncio.run(startup(bot_config, log_config))
