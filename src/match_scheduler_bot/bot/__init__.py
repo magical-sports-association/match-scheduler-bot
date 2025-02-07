@@ -73,6 +73,18 @@ class MagicalSportsApplicationBot(commands.Bot):
             intents=discord.Intents(**self.intentions)
         )
 
+    async def setup_hook(self):
+
+        __LOGGER__.info(
+            'Loading extension: `match_scheduler_bot.bot.extensions.scheduling`'
+        )
+        await self.load_extension(
+            name='match_scheduler_bot.bot.extensions.scheduling'
+        )
+
+        __LOGGER__.info('Syncing command tree')
+        await self.tree.sync(guild=discord.Object(self._config.auth.server))
+
     @property
     def token(self) -> SecretStr:
         return self._config.auth.token
