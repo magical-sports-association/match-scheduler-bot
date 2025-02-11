@@ -363,7 +363,10 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
 
         __LOGGER__.debug('Sending forbidden notice as the response')
         if edit_response:
-            await interaction.edit_original_response(embed=forbidden_notice)
+            await interaction.edit_original_response(
+                content=discord.MISSING,
+                embed=forbidden_notice
+            )
         else:
             await interaction.response.send_message(
                 embed=forbidden_notice,
@@ -423,7 +426,10 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
 
         __LOGGER__.debug('Sending error notice as the response')
         if edit_response:
-            await interaction.edit_original_response(embed=error_notice)
+            await interaction.edit_original_response(
+                content=None,
+                embed=error_notice
+            )
         else:
             await interaction.response.send_message(
                 embed=error_notice,
@@ -492,7 +498,10 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
 
         __LOGGER__.debug('Sending error notice as the response')
         if edit_response:
-            await interaction.edit_original_response(embed=error_notice)
+            await interaction.edit_original_response(
+                content=None,
+                embed=error_notice
+            )
         else:
             await interaction.response.send_message(
                 embed=error_notice,
@@ -606,6 +615,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
             'Replacing original interaction response with confirmation embed'
         )
         await interaction.edit_original_response(
+            content=None,
             embed=schedule_confirmation
         )
 
@@ -671,6 +681,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
             'Replacing original interaction response with confirmation embed'
         )
         await interaction.edit_original_response(
+            content=None,
             embed=cancel_confirmation
         )
 
@@ -744,6 +755,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
             'Replacing original interaction response with confirmation embed'
         )
         await interaction.edit_original_response(
+            content=None,
             embed=calendar_notice
         )
 
