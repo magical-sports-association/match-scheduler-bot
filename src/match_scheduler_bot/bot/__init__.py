@@ -8,7 +8,7 @@ import logging
 import asyncio
 from pathlib import Path
 from enum import Enum, StrEnum
-from typing import Optional
+from typing import Optional, List
 
 import discord
 from discord.ext import commands
@@ -137,14 +137,28 @@ class MagicalSportsApplicationBot(commands.Bot):
     @property
     def public_log_channel(self) -> discord.Object:
         return discord.Object(
-            self._config.auth.logs.public_log
+            self._config.auth.logs.public.channel_id
         )
 
     @property
     def audit_log_channel(self) -> discord.Object:
         return discord.Object(
-            self._config.auth.logs.audit_log
+            self._config.auth.logs.audit.channel_id
         )
+
+    @property
+    def public_log_pings(self) -> List[discord.Object]:
+        return [
+            discord.Object(roleid)
+            for roleid in self._config.auth.logs.public.interested_parties
+        ]
+
+    @property
+    def audit_log_pings(self) -> List[discord.Object]:
+        return [
+            discord.Object(roleid)
+            for roleid in self._config.auth.logs.audit.interested_parties
+        ]
 
 
 async def startup(

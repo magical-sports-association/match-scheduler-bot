@@ -19,9 +19,14 @@ from .runners import MatchlistQueryRunner
 import pydantic
 
 
+class OutputChannel(pydantic.BaseModel):
+    channel_id: Annotated[int, pydantic.Field(gt=0)]
+    interested_parties: List[int]
+
+
 class BotOutput(pydantic.BaseModel):
-    public_log: Annotated[int, pydantic.Field(gt=0)]
-    audit_log: Annotated[int, pydantic.Field(gt=0)]
+    public: OutputChannel
+    audit: OutputChannel
 
 
 class BotAuthInfo(pydantic.BaseModel):

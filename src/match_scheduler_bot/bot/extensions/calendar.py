@@ -173,20 +173,53 @@ class MatchCalendarCog(discord.ext.commands.Cog):
             inline=False
         )
 
-        __LOGGER__.debug('Sending formal announcement out')
-
         public_announce = guild.get_channel(
             self._bot.public_log_channel.id
         )
+        public_pings = [
+            guild.get_role(r.id)
+            for r in self._bot.public_log_pings
+        ]
         staff_announce = guild.get_channel(
             self._bot.audit_log_channel.id
         )
+        staff_pings = [
+            guild.get_role(r.id)
+            for r in self._bot.audit_log_pings
+        ]
+
+        __LOGGER__.debug(
+            'Got public announcement channel: %s',
+            str(public_announce)
+        )
+        __LOGGER__.debug(
+            'Public announcement will ping: %s',
+            str(public_pings)
+        )
+        __LOGGER__.debug(
+            'Got audit announcement channel: %s',
+            str(staff_announce)
+        )
+        __LOGGER__.debug(
+            'Audit announcement will ping: %s',
+            str(staff_pings)
+        )
 
         if public_announce:
-            await public_announce.send(embed=notice)
+            await public_announce.send(
+                content=' '.join(
+                    r.mention for r in public_pings if r is not None
+                ),
+                embed=notice
+            )
 
         if staff_announce:
-            await staff_announce.send(embed=notice)
+            await staff_announce.send(
+                content=' '.join(
+                    r.mention for r in staff_pings if r is not None
+                ),
+                embed=notice
+            )
 
     async def _announce_newly_cancelled_match(
         self,
@@ -235,20 +268,53 @@ class MatchCalendarCog(discord.ext.commands.Cog):
             inline=False
         )
 
-        __LOGGER__.debug('Sending formal announcement out')
-
         public_announce = guild.get_channel(
             self._bot.public_log_channel.id
         )
+        public_pings = [
+            guild.get_role(r.id)
+            for r in self._bot.public_log_pings
+        ]
         staff_announce = guild.get_channel(
             self._bot.audit_log_channel.id
         )
+        staff_pings = [
+            guild.get_role(r.id)
+            for r in self._bot.audit_log_pings
+        ]
+
+        __LOGGER__.debug(
+            'Got public announcement channel: %s',
+            str(public_announce)
+        )
+        __LOGGER__.debug(
+            'Public announcement will ping: %s',
+            str(public_pings)
+        )
+        __LOGGER__.debug(
+            'Got audit announcement channel: %s',
+            str(staff_announce)
+        )
+        __LOGGER__.debug(
+            'Audit announcement will ping: %s',
+            str(staff_pings)
+        )
 
         if public_announce:
-            await public_announce.send(embed=notice)
+            await public_announce.send(
+                content=' '.join(
+                    r.mention for r in public_pings if r is not None
+                ),
+                embed=notice
+            )
 
         if staff_announce:
-            await staff_announce.send(embed=notice)
+            await staff_announce.send(
+                content=' '.join(
+                    r.mention for r in staff_pings if r is not None
+                ),
+                embed=notice
+            )
 
     async def _ignore_unknown_scheduling_event(self):
         __LOGGER__.debug(
