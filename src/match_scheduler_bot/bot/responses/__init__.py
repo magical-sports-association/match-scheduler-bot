@@ -4,6 +4,8 @@
     :module_author: CountTails
 '''
 
+# THIS MODULE IS DEPRACATED
+
 from enum import Enum, StrEnum
 
 import discord
