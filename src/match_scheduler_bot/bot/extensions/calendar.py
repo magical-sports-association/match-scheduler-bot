@@ -11,6 +11,7 @@ from typing import Optional, Dict, Any
 from datetime import timezone, datetime
 
 from ...model.rows import ScheduledMatch, SchedulingEvent, SchedulingEventType
+from ...model.runners import MatchlistQueryRunner
 from ..msgpaths import CoreContentPaths, SchedulingAnnouncementPaths
 
 import discord
@@ -36,6 +37,10 @@ class MatchCalendarCog(discord.ext.commands.Cog):
                 None
         '''
         self._bot = bot
+        self._matchlist = MatchlistQueryRunner(
+            self._bot.dbpool,
+            ScheduledMatch.from_sql_row
+        )
         self._start_tasks()
 
     def _start_tasks(self) -> None:
@@ -94,9 +99,20 @@ class MatchCalendarCog(discord.ext.commands.Cog):
             'Task end: announcing scheduling events in the last minute'
         )
 
-    @tasks.loop(minutes=60)
+    @tasks.loop(minutes=1)
     async def remove_past_matches_from_schedule(self):
-        pass
+        __LOGGER__.info('Task start: remove past matches from match list')
+
+        purged = await self._matchlist.delete_past_matches(
+            round(
+                datetime.now(tz=timezone.utc).timestamp()
+            )
+        )
+
+        __LOGGER__.info(
+            'Task end: removed %d matches from match list',
+            len(purged)
+        )
 
     @tasks.loop(minutes=1)
     async def announce_incoming_matches(self):
