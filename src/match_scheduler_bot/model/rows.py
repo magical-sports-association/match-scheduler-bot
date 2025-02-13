@@ -10,6 +10,9 @@ import sqlite3
 
 from typing import Tuple
 from dataclasses import dataclass
+from enum import IntEnum
+
+import discord
 
 
 @dataclass
@@ -70,3 +73,15 @@ class MatchToCancel:
             team1,
             team2
         )
+
+
+class SchedulingEventType(IntEnum):
+    SCHEDULED = 0
+    CANCELLED = 1
+
+
+@dataclass
+class SchedulingEvent:
+    kind: SchedulingEventType
+    data: ScheduledMatch
+    guild: discord.Guild

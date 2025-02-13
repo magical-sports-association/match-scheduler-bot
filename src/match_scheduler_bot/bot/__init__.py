@@ -5,8 +5,10 @@
 '''
 
 import logging
+import asyncio
 from pathlib import Path
 from enum import Enum, StrEnum
+from typing import Optional
 
 import discord
 from discord.ext import commands
@@ -17,6 +19,7 @@ from ..model import (
     AsyncConnectionPool,
     FileCacheProvider
 )
+from ..model.rows import SchedulingEvent
 from .. import setup_config, setup_logging, get_config
 
 
@@ -51,10 +54,43 @@ class MagicalSportsApplicationBot(commands.Bot):
         self._config = botconf
         self._pool = pool
         self._message_cache = cache
+        self._scheduling_events = asyncio.Queue()
         super().__init__(
             command_prefix=commands.when_mentioned_or('/'),
             intents=self.intentions
         )
+
+    async def publish_scheduling_event(
+        self,
+        event: SchedulingEvent
+    ) -> None:
+        '''
+            Coroutine to add the given event to event queue
+
+            Parameters:
+                event [SchedulingEvent] event to add to queue
+
+            Returns:
+                None
+        '''
+        await self._scheduling_events.put(event)
+
+    def get_next_scheduling_event(self) -> Optional[SchedulingEvent]:
+        '''
+            Returns the next scheduling event in the queue (if any)
+            Returns `None` if no events are in the queue
+
+            Returns:
+                Optional[SchedulingEvent]: next event in queue (if any)
+        '''
+        try:
+            __LOGGER__.debug('Attempting to get next event in queue')
+            return self._scheduling_events.get_nowait()
+        except asyncio.QueueEmpty:
+            __LOGGER__.error(
+                'No events to pull from the queue (queue is empty)'
+            )
+            return None
 
     async def setup_hook(self):
 
@@ -63,6 +99,12 @@ class MagicalSportsApplicationBot(commands.Bot):
         )
         await self.load_extension(
             name='match_scheduler_bot.bot.extensions.scheduling'
+        )
+        __LOGGER__.info(
+            'Loading extension: `match_scheduler_bot.bot.extensions.calendar`'
+        )
+        await self.load_extension(
+            name='match_scheduler_bot.bot.extensions.calendar'
         )
 
         __LOGGER__.info('Syncing command tree')

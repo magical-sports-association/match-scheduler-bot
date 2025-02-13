@@ -12,7 +12,13 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 from enum import Enum
 
-from ...model.rows import MatchToSchedule, ScheduledMatch, MatchToCancel
+from ...model.rows import (
+    MatchToSchedule,
+    ScheduledMatch,
+    MatchToCancel,
+    SchedulingEvent,
+    SchedulingEventType
+)
 from ...model.runners import MatchlistQueryRunner
 from ...model import CommandSpec, GroupSpec
 from ...exceptions import MatchSchedulerBotException
@@ -22,44 +28,13 @@ from ..validators import (
     date_in_near_future,
     date_parts
 )
+from ..msgpaths import CoreContentPaths, SchedulingConfirmationPaths
 
 import discord
 
 
 __LOGGER__ = logging.getLogger(__name__)
 __SPEC__: GroupSpec = get_config().commands["scheduling"]
-
-
-class CoreContentPaths(Enum):
-    '''
-        Paths for core parts of the responses made by this command group
-    '''
-    ACK_CMD_USE = Path('core/acknowledge.content.md')
-    CMD_ISSUE = Path('core/issue.embedtitle.md')
-    CMD_ERROR = Path('core/error.embedtitle.md')
-    CMD_ERROR_MSG = Path('core/error.embedfieldname.md')
-    TEAMS_MATCHUP = Path('core/teams.embedfieldvalue.md')
-    MATCHUP_DATE = Path('core/date.embedfieldvalue.md')
-    INSUFFICIENT_PERMISSIONS = Path('core/forbidden.embedfieldname.md')
-    ALLOWED_ROLES = Path('core/forbidden.embedfieldvalue.md')
-    SUPPORT_LINK = Path('core/supportlink.embedfieldvalue.md')
-
-
-class SchedulingConfirmationPaths(Enum):
-    '''
-        Paths for the scheduling confirmation
-        responses made by this command group
-    '''
-    MATCH_SCHEDULED_TITLE = Path('scheduling/confirm/created.embedtitle.md')
-    MATCH_CANCELLED_TITLE = Path('scheduling/confirm/deleted.embedtitle.md')
-    MATCH_CALENDAR_TITLE = Path('scheduling/confirm/read.embedtitle.md')
-    MATCH_CALENDAR_SUBTITLE = Path('scheduling/confirm/read.embedsubtitle.md')
-    MATCH_CALENDAR_SOME = Path(
-        'scheduling/confirm/read.somematch.embedfieldvalue.md'
-    )
-    MATCH_CALENDAR_NONE = Path(
-        'scheduling/confirm/read.nomatch.embedfieldvalue.md'
-    )
 
 
 @discord.app_commands.guilds(get_config().auth.server)
@@ -188,6 +163,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
             )
         )
         await self._report_new_match_scheduled(interaction, scheduled)
+        await self._publish_match_scheduled_event(scheduled, interaction.guild)
 
     @discord.app_commands.command(
         name=__DELETE__.invoke_with,
@@ -231,6 +207,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
             )
         )
         await self._report_match_cancelled(interaction, cancelled)
+        await self._publish_match_cancelled_event(cancelled, interaction.guild)
 
     @discord.app_commands.command(
         name=__READ__.invoke_with,
@@ -757,6 +734,59 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
         await interaction.edit_original_response(
             content=None,
             embed=calendar_notice
+        )
+
+    async def _publish_match_scheduled_event(
+        self,
+        scheduled_match: ScheduledMatch,
+        scheduled_in: discord.Guild,
+    ) -> None:
+        '''
+            Coroutine to publish a match scheduled event for later consuming
+
+            Parameters:
+                scheduled_match [ScheduledMatch] details of match scheduled
+                scheduled_in [discord.Guild] guild match was scheduled in
+
+            Returns:
+                None
+        '''
+        __LOGGER__.debug(
+            'Pushing a scheduled match event to the bot event queue: %s',
+            str(scheduled_match)
+        )
+        await self._bot.publish_scheduling_event(
+            SchedulingEvent(
+                SchedulingEventType.SCHEDULED,
+                scheduled_match,
+                scheduled_in
+            )
+        )
+
+    async def _publish_match_cancelled_event(
+        self,
+        cancelled_match: ScheduledMatch,
+        canelled_in: discord.Guild
+    ) -> None:
+        '''
+            Coroutine to publish a match cancelled event for later consuming
+
+            Parameters:
+                cancelled_match [ScheduledMatch] details of match cancelled
+
+            Returns:
+                None
+        '''
+        __LOGGER__.debug(
+            'Pushing a cancelled match event to the bot event queue: %s',
+            str(cancelled_match)
+        )
+        await self._bot.publish_scheduling_event(
+            SchedulingEvent(
+                SchedulingEventType.CANCELLED,
+                cancelled_match,
+                canelled_in
+            )
         )
 
 
