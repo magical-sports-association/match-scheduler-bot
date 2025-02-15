@@ -7,8 +7,8 @@
 import logging
 import asyncio
 from pathlib import Path
-from typing import Optional, Dict, Any
-from datetime import timezone, datetime
+from typing import Optional, Dict, Any, Callable
+from datetime import timezone, datetime, timedelta
 
 from ...model.rows import ScheduledMatch, SchedulingEvent, SchedulingEventType
 from ...model.runners import MatchlistQueryRunner
@@ -116,7 +116,36 @@ class MatchCalendarCog(discord.ext.commands.Cog):
 
     @tasks.loop(minutes=1)
     async def announce_incoming_matches(self):
-        pass
+        __LOGGER__.info('Task start: announcing matches starting soon')
+
+        upcoming = await self._matchlist.find_upcoming_match(
+            not_before=round(
+                datetime.now(
+                    tz=timezone.utc
+                ).timestamp()
+            )
+        )
+
+        if server := self._bot.get_guild(self._bot.guild.id):
+            embeds = [
+                self._match_starting_soon(server, m)
+                for m in filter(self._starts_in(minutes=30), upcoming)
+            ]
+            if embeds:
+                await server.get_channel(
+                    self._bot.public_log_channel.id
+                ).send(
+                    content=' '.join(
+                        server.get_role(r).mention
+                        for r in self._bot.public_log_pings
+                    ),
+                    embeds=embeds
+                )
+
+        __LOGGER__.info(
+            'Task end: announced %d matches starting soon',
+            len(embeds)
+        )
 
     async def _format_message_template(
         self,
@@ -332,7 +361,127 @@ class MatchCalendarCog(discord.ext.commands.Cog):
                 embed=notice
             )
 
+    def _starts_in(
+        self,
+        **kwargs: Dict[str, Any]
+    ) -> Callable[[ScheduledMatch], bool]:
+        '''
+            Creates a predicate function to check if a match starts soon
+
+            Parameters:
+                kwargs: arguments passed to timedelta constructor
+
+            Returns:
+                Callable[[ScheduledMatch], bool]: predicate
+        '''
+        announce_time_start = timedelta(**kwargs)
+        announce_time_end = announce_time_start + \
+            timedelta(seconds=60)
+        now = round(
+            datetime.now(tz=datetime.timezone.utc).timestamp()
+        )
+
+        def is_soon(m: ScheduledMatch) -> bool:
+            '''
+                Predicate that determines if a match is starting soon
+
+                Parameters:
+                    m [ScheduledMatch]: the match under test of this predicate
+
+                Returns:
+                    [bool]: True is match is starting soon, False otherwise
+            '''
+            time_diff = m.start_time - now
+            before = announce_time_start.total_seconds()
+            after = announce_time_end.total_seconds()
+            return before <= time_diff <= after
+
+        return is_soon
+
+    async def _match_starting_soon(
+        self,
+        match: ScheduledMatch,
+        guild: discord.Guild
+    ) -> discord.Embed:
+        '''
+            Creates the embed for a match starting soon announcement
+
+            Parameters:
+                match [ScheduledMatch]: the match starting soon
+                guild [discord.Guild]: guild object for obtaining match info
+
+            Returns:
+                [discord.Embed]: announcement content
+        '''
+        async with asyncio.TaskGroup() as group:
+            notice_title = group.create_task(
+                self._format_message_template(
+                    SchedulingAnnouncementPaths.INCOMING_MATCH_TITLE.value
+                )
+            )
+            notice_matchup_info_head = group.create_task(
+                self._format_message_template(
+                    SchedulingAnnouncementPaths.INCOMING_MATCH_INFO_HEAD.value
+                )
+            )
+            notice_matchup_info_body = group.create_task(
+                self._format_message_template(
+                    SchedulingAnnouncementPaths.INCOMING_MATCH_INFO_BODY.value,
+                    team1=guild.get_role(match.team_1_id).mention,
+                    team2=guild.get_role(match.team_2_id).mention,
+                    time_to_start=discord.utils.format_dt(
+                        datetime.fromtimestamp(
+                            match.start_time,
+                            timezone.utc
+                        ),
+                        style='R'
+                    )
+                )
+            )
+            notice_watchinfo_head = group.create_task(
+                self._format_message_template(
+                    SchedulingAnnouncementPaths.INCOMING_STREAM_INFO_HEAD.value
+                )
+            )
+            notice_watchinfo_body = group.create_task(
+                self._format_message_template(
+                    SchedulingAnnouncementPaths.INCOMING_STREAM_INFO_BODY.value
+                )
+            )
+            notice_playerinfo_head = group.create_task(
+                self._format_message_template(
+                    SchedulingAnnouncementPaths.INCOMING_TEAM_INFO_HEAD.value
+                )
+            )
+            notice_playerinfo_body = group.create_task(
+                self._format_message_template(
+                    SchedulingAnnouncementPaths.INCOMING_TEAM_INFO_BODY.value
+                )
+            )
+
+        return discord.Embed(
+            title=notice_title.result(),
+            color=self._bot.AccentColor.INFO.value
+        ).add_field(
+            name=notice_matchup_info_head.result(),
+            value=notice_matchup_info_body.result(),
+            inline=False
+        ).add_field(
+            name=notice_watchinfo_head.result(),
+            value=notice_watchinfo_body.result(),
+            inline=False
+        ).add_field(
+            name=notice_playerinfo_head.result(),
+            value=notice_playerinfo_body.result(),
+            inline=False
+        )
+
     async def _ignore_unknown_scheduling_event(self):
+        '''
+            Issues a logging statement about an unknown event
+
+            This is mostly here to keep the match case statement neat.
+        '''
         __LOGGER__.debug(
             'Recieved unknown event from queue, not announcing anything'
         )
