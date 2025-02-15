@@ -1,11 +1,11 @@
-# Makefile for matchschedulerbot 
+# Makefile for msadiscordapp
 
 help:
-	@echo "Makefile for matchschedulerbot. Available targets:"
+	@echo "Makefile for msadiscordapp. Available targets:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'	
 
 venv: ## Setup a virtual environment
-	[ -d .venv ] || python3.12 -m venv .venv --prompt=match_scheduler_bot
+	[ -d .venv ] || python3.12 -m venv .venv --prompt=msadiscordapp
 
 clean-venv: ## Destroy the virtual environment if it exists
 	[ ! -d .venv ] || rm -rf .venv

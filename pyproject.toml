@@ -3,17 +3,18 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "match_scheduler_bot"
-version = "0.1.1"
-description = "A discord bot for scheduling msa matches"
+name = "msadiscordapp"
+version = "0.1.2"
+description = "A bot for the MSA competitive quidditch champions server"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "click == 8.1.7",
   "discord.py == 2.4.0",
   "pydantic == 2.10.4",
-  "aiosqlite == 0.20.0"
+  "aiosqlite == 0.20.0",
+  "aiofiles==24.1.0"
 ]
 
 [project.scripts]
-matchschedulerbot = "match_scheduler_bot.cli:main"
+msadiscordapp = "msadiscordapp.cli:main"
