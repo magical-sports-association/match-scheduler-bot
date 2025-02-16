@@ -33,7 +33,7 @@ def serve(bot_config, log_config):
     '''
         Entry point to the `serve` subcommand of this application.
         Serves as the initialization point for the module's service and
-        the asychronous runtime the the service runs on top of
+        the asychronous runtime that the service runs on top of
 
         Parameters:
             bot_config [click.Path]: path of the bot's configuration file
@@ -43,7 +43,8 @@ def serve(bot_config, log_config):
             None
 
         Raises:
-
+            BaseMSADiscordAppException: if the service fails to start
+            discord.errors.*: if the service bot could not be initialized
     '''
     # asyncio.run(startup(bot_config, log_config))
     print('Starting service')
@@ -56,13 +57,19 @@ def serve(bot_config, log_config):
     default=f'{os.path.expanduser("~/.config/msa/bot.json")}'
 )
 def check(bot_config):
-    """Check if the given config file is valid
-    try:
-        setup_config(bot_config)
-        click.echo('Configuration is valid')
-    except BotConfigurationError as err:
-        click.echo(
-            err.__cause__.errors()
-        )
-    """
+    '''
+        Entry point to the `check` subcommand of this application
+        Serves as a helpful resource for validating the input
+        configuration for be used as the value for the `--bot-config`
+        option in the `serve` subcommand.
+
+        Parameters:
+            bot_config [click.Path]: the config file to validate
+
+        Returns:
+            None
+
+        Raises:
+            pydantic.ValidationError: if the file does not conform
+    '''
     print('Checking config file')
