@@ -35,7 +35,7 @@ activate: ## Activate the virtual environment for bootstrapping (does NOT activa
 test: bootstrap ## Run unittests on the source directory
 	@( \
 		source .venv/bin/activate; \
-		pytest --cov=match_scheduler_bot; \
+		pytest --cov=msadiscordapp; \
 		coverage report -m; \
 	)
 
@@ -43,7 +43,7 @@ test: bootstrap ## Run unittests on the source directory
 lint: bootstrap ## Run lint checks on the source directory
 	@( \
 		source .venv/bin/activate; \
-		pylint src/match_scheduler_bot; \
+		pylint src/msadiscordapp; \
 	)
 
 bootstrap: venv ## Bootstrap the virtual environment
