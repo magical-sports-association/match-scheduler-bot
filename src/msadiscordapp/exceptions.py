@@ -5,13 +5,13 @@
 '''
 
 from __future__ import annotations
-from typing import Tuple, Any
+from pathlib import Path
 
 
 class BaseMSADiscordAppException(Exception):
     '''Base exception class for this package'''
 
-    def __init__(self, msg: str, *args: Tuple[Any]):
+    def __init__(self, msg: str):
         '''
             Initializes the exception with the given message.
             Also accepts any additional data for the parent constructor.
@@ -19,12 +19,10 @@ class BaseMSADiscordAppException(Exception):
 
             Parameters:
                 msg [str]: the error message for this exception
-                *args [Tuple[Any]]: additional data for parent constructor
 
             Returns:
                 None
         '''
-        super().__init__(*args)
         self._reason = msg
 
     @property
@@ -48,3 +46,36 @@ class MSADiscordAppCommandError(BaseMSADiscordAppException):
 
 class MSADiscordAppResourceAccessError(BaseMSADiscordAppException):
     '''Base exception for issues related to resource access in this package'''
+
+
+class MessageCacheFailure(MSADiscordAppResourceAccessError):
+    '''Exception for general issues regarding the disk cache'''
+
+
+class MessageContentNotReadable(MessageCacheFailure):
+    '''Exception describing an issue obtaining contents from the disk cache'''
+
+    def __init__(self, msg: str, path: Path) -> None:
+        '''
+            Initializes the exception with the given path and message
+
+            Parameters:
+                msg [str]: the error message
+                path [Path]: problematic path causing error
+
+
+            Returns:
+                None
+        '''
+        super().__init__(msg)
+        self._path = path
+
+    @property
+    def reason(self) -> str:
+        '''
+            Property accessor for the error message of this exception
+
+            Returns:
+                str -> the error message
+        '''
+        return f'Error reading {self._path}: {self._reason}'

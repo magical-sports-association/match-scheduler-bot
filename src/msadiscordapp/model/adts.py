@@ -8,8 +8,12 @@ from __future__ import annotations
 from typing import Tuple
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import logging
 
 import aiosqlite
+
+
+__LOGGER__ = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,6 +50,9 @@ class MatchupDetails:
                 MatchupDetails -> new instance with ensured ordering of ids
         '''
         if team1 > team2:
+            __LOGGER__.debug(
+                'Received team IDs out of order; swapping to restore order'
+            )
             team1, team2 = team2, team1
         return cls(team1, team2)
 
@@ -120,8 +127,47 @@ class ScheduledMatch:
                 ScheduledMatch -> interpreted details of the match row
         '''
         dt, t1, t2 = row
+        __LOGGER__.debug(
+            'Deconstructed fields from row:\n\tdt=%d\n\tt1=%d\n\tt2=%d',
+            dt,
+            t1,
+            t2
+        )
         return cls(
             start_at=datetime.fromtimestamp(dt, timezone.utc),
             team1=t1,
             team2=t2
         )
+
+
+@dataclass
+class CachingRecord:
+    '''
+        Container for the string contents and an expiration timestamp
+
+        Attributes:
+            expires_at [datetime]: timestamp of when the cache becomes invalid
+            contents [str]: cached contents of the file
+
+        Methods:
+            def is_expired(): predicate determine this cache record's validity
+    '''
+    expires_at: datetime
+    contents: str
+
+    def is_expired(self) -> bool:
+        '''
+            Checks if this caching record is still valid
+
+            Returns:
+                bool -> True if expired, otherwise False
+        '''
+        now = datetime.now(tz=timezone.utc)
+        expired = now > self.expires_at
+
+        __LOGGER__.debug(
+            'Validity check:\n\tTime is: %s\n\tRecord valid? %s',
+            now.isoformat(),
+            'No' if expired else 'Yes'
+        )
+        return expired
