@@ -5,7 +5,7 @@
 '''
 
 import logging
-from typing import Callable
+from typing import Callable, Optional
 from contextlib import asynccontextmanager
 
 from .processing.pool import AsyncConnectionPool
@@ -54,7 +54,7 @@ class TransactionalMixin:
             Yields:
                 aiosqlite.Connection -> the borrowed connection
         '''
-        conn = None
+        conn: Optional[aiosqlite.Connection] = None
         try:
             __LOGGER__.debug('Requesting connection from the pool')
             conn = self._pool.acquire(row_factory)
