@@ -159,3 +159,7 @@ class MatchToCancelDoesNotExist(MatchlistOperationFailure):
         team1 = self.team1_mention
         team2 = self.team2_mention
         return f'No match between {team1} and {team2} could be found.'
+
+
+class InvalidParameterValueGiven(MSADiscordAppCommandError):
+    '''Exception for validation issues with app command parameters'''
