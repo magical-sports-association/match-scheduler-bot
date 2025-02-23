@@ -12,8 +12,8 @@ import atexit
 from typing import Optional, Any
 from pathlib import Path
 
-# from .exceptions import MissingConfigurationError, BadConfigurationError
-# from .model import BotConfig
+from .exceptions import MSADicsordAppConfigurationError
+from .model.config import BotConfig
 
 import pydantic
 
@@ -49,14 +49,14 @@ def setup_config(config: str | Path) -> None:
             __CONFIG__ = config
     except FileNotFoundError as err:
         __LOGGER__.error('Config file `%s` does not exist', config)
-        raise MissingConfigurationError(
+        raise MSADicsordAppConfigurationError(
             f'No such configuration file: {config}'
         ) from err
     except pydantic.ValidationError as err:
         __LOGGER__.error(
             'Config file does not conform to config structure'
         )
-        raise BadConfigurationError(
+        raise MSADicsordAppConfigurationError(
             f'Bad configuration read: {err.error_count()} issues'
         ) from err
 
@@ -67,5 +67,5 @@ def get_config():
         __LOGGER__.error(
             'Attempted to read configuration object when not present'
         )
-        raise MissingConfigurationError('No configuration loaded')
+        raise MSADicsordAppConfigurationError('No configuration loaded')
     return __CONFIG__
