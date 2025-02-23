@@ -8,9 +8,11 @@ from __future__ import annotations
 from typing import Tuple
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from enum import IntEnum
 import logging
 
 import aiosqlite
+import discord
 
 
 __LOGGER__ = logging.getLogger(__name__)
@@ -171,3 +173,30 @@ class CachingRecord:
             'No' if expired else 'Yes'
         )
         return expired
+
+
+class SchedulingEventType(IntEnum):
+    '''
+        Enumerates the event scheduling events the result from bot commands
+
+        Variants:
+            Scheduled [int]: indicates an event where a match was scheduled
+            Cancelled [int]: indicates an event where a match was cancelled
+    '''
+    SCHEDULED = 0
+    CANCELLED = 1
+
+
+@dataclass
+class SchedulingEvent:
+    '''
+        Represents a event where the matchlist was manipulated
+
+        Attributes:
+            kind [SchedulingEventType]: indicates the event type that occurred
+            data [ScheduledMatch]: the match details resulting from the event
+            guild [discord.Guild]: guild whether event originated from
+    '''
+    kind: SchedulingEventType
+    data: ScheduledMatch
+    guild: discord.Guild
