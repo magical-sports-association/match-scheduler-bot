@@ -8,9 +8,8 @@ import click
 import os.path
 import asyncio
 
-# from msadiscordapp.bot import startup
-# from msadiscordapp.exceptions import BotConfigurationError
-# from msadiscordapp import setup_config
+from msadiscordapp.bot import startup
+from msadiscordapp import setup_config
 
 
 @click.group
@@ -46,8 +45,7 @@ def serve(bot_config, log_config):
             BaseMSADiscordAppException: if the service fails to start
             discord.errors.*: if the service bot could not be initialized
     '''
-    # asyncio.run(startup(bot_config, log_config))
-    print('Starting service')
+    asyncio.run(startup(bot_config, log_config))
 
 
 @main.command()
@@ -72,4 +70,4 @@ def check(bot_config):
         Raises:
             pydantic.ValidationError: if the file does not conform
     '''
-    print('Checking config file')
+    setup_config(bot_config)
