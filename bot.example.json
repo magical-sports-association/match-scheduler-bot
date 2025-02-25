@@ -9,8 +9,18 @@
     },
     "server": 1,
     "logs": {
-      "public_log": 1,
-      "audit_log": 1
+      "public": {
+        "channel_id": 1,
+        "interested_parties": [
+          1
+        ]
+      },
+      "audit": {
+        "channel_id": 1,
+        "interested_parties": [
+          1
+        ]
+      }
     }
   },
   "commands": {
@@ -37,8 +47,8 @@
             "team_2": "team²"
           },
           "allowlist": [
-            "staff",
-            "team captain"
+            1,
+            1
           ]
         },
         "delete_match": {
@@ -53,8 +63,8 @@
             "team_2": "team²"
           },
           "allowlist": [
-            "staff",
-            "team captain"
+            1,
+            1
           ]
         },
         "get_match": {
