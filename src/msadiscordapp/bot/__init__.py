@@ -5,6 +5,7 @@
 '''
 
 from pathlib import Path
+from datetime import timedelta
 
 from .client import MagicalSportsApplicationBot
 
@@ -39,7 +40,7 @@ async def startup(
     setup_logging(logconfig)
 
     async with AsyncConnectionPool(get_config().data.database, 3) as pool:
-        cache = DiskCache(get_config().data.messages, 3600)
+        cache = DiskCache(get_config().data.messages, timedelta(seconds=300))
         async with MagicalSportsApplicationBot(
             get_config(),
             pool,

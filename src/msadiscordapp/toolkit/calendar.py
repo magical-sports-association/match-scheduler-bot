@@ -39,7 +39,6 @@ class MatchCalendarCog(discord.ext.commands.Cog):
         self._bot = bot
         self._matchlist = MatchlistQueryRunner(
             self._bot.dbpool,
-            ScheduledMatch.from_sql_row
         )
         self._start_tasks()
 
@@ -103,32 +102,36 @@ class MatchCalendarCog(discord.ext.commands.Cog):
     async def remove_past_matches_from_schedule(self):
         __LOGGER__.info('Task start: remove past matches from match list')
 
-        purged = await self._matchlist.delete_past_matches(
-            round(
-                datetime.now(tz=timezone.utc).timestamp()
+        async with self._matchlist.begin(ScheduledMatch.from_row) as conn:
+            purged = await self._matchlist.delete_past_matches(
+                conn,
+                round(
+                    datetime.now(tz=timezone.utc).timestamp()
+                )
             )
-        )
 
-        __LOGGER__.info(
-            'Task end: removed %d matches from match list',
-            len(purged)
-        )
+            __LOGGER__.info(
+                'Task end: removed %d matches from match list',
+                len(purged)
+            )
 
     @tasks.loop(minutes=1)
     async def announce_incoming_matches(self):
         __LOGGER__.info('Task start: announcing matches starting soon')
 
-        upcoming = await self._matchlist.find_upcoming_match(
-            not_before=round(
-                datetime.now(
-                    tz=timezone.utc
-                ).timestamp()
+        async with self._matchlist.begin(ScheduledMatch.from_row) as conn:
+            upcoming = await self._matchlist.find_upcoming_matches(
+                conn=conn,
+                not_before=round(
+                    datetime.now(
+                        tz=timezone.utc
+                    ).timestamp()
+                )
             )
-        )
 
         if server := self._bot.get_guild(self._bot.guild.id):
             embeds = [
-                self._match_starting_soon(server, m)
+                await self._match_starting_soon(server, m)
                 for m in filter(self._starts_in(minutes=30), upcoming)
             ]
             if embeds:
@@ -136,16 +139,16 @@ class MatchCalendarCog(discord.ext.commands.Cog):
                     self._bot.public_log_channel.id
                 ).send(
                     content=' '.join(
-                        server.get_role(r).mention
+                        server.get_role(r.id).mention
                         for r in self._bot.public_log_pings
                     ),
                     embeds=embeds
                 )
 
-        __LOGGER__.info(
-            'Task end: announced %d matches starting soon',
-            len(embeds)
-        )
+            __LOGGER__.info(
+                'Task end: announced %d matches starting soon',
+                len(embeds)
+            )
 
     async def _format_message_template(
         self,
@@ -168,7 +171,7 @@ class MatchCalendarCog(discord.ext.commands.Cog):
                 KeyError: if kwargs does not contain a specified placeholder
                     - This is typically a programming error
         '''
-        content_template = await self._bot.msgcache.get_text(msgpath)
+        content_template = await self._bot.messages.fetch_text(msgpath)
         return content_template.format(**kwargs)
 
     async def _announce_newly_scheduled_match(
@@ -189,19 +192,14 @@ class MatchCalendarCog(discord.ext.commands.Cog):
             team_matchup = group.create_task(
                 self._format_message_template(
                     CoreContentPaths.TEAMS_MATCHUP.value,
-                    team1=guild.get_role(event.team_1_id).mention,
-                    team2=guild.get_role(event.team_2_id).mention
+                    team1=guild.get_role(event.team1).mention,
+                    team2=guild.get_role(event.team2).mention
                 )
             )
             matchup_date = group.create_task(
                 self._format_message_template(
                     CoreContentPaths.MATCHUP_DATE.value,
-                    dt=discord.utils.format_dt(
-                        datetime.fromtimestamp(
-                            event.start_time,
-                            timezone.utc
-                        ),
-                    )
+                    dt=discord.utils.format_dt(event.start_at)
                 )
             )
 
@@ -284,19 +282,14 @@ class MatchCalendarCog(discord.ext.commands.Cog):
             team_matchup = group.create_task(
                 self._format_message_template(
                     CoreContentPaths.TEAMS_MATCHUP.value,
-                    team1=guild.get_role(event.team_1_id).mention,
-                    team2=guild.get_role(event.team_2_id).mention
+                    team1=guild.get_role(event.team1).mention,
+                    team2=guild.get_role(event.team2).mention
                 )
             )
             matchup_date = group.create_task(
                 self._format_message_template(
                     CoreContentPaths.MATCHUP_DATE.value,
-                    dt=discord.utils.format_dt(
-                        datetime.fromtimestamp(
-                            event.start_time,
-                            timezone.utc
-                        ),
-                    )
+                    dt=discord.utils.format_dt(event.start_at)
                 )
             )
 
@@ -378,7 +371,7 @@ class MatchCalendarCog(discord.ext.commands.Cog):
         announce_time_end = announce_time_start + \
             timedelta(seconds=60)
         now = round(
-            datetime.now(tz=datetime.timezone.utc).timestamp()
+            datetime.now(tz=timezone.utc).timestamp()
         )
 
         def is_soon(m: ScheduledMatch) -> bool:
@@ -391,7 +384,7 @@ class MatchCalendarCog(discord.ext.commands.Cog):
                 Returns:
                     [bool]: True is match is starting soon, False otherwise
             '''
-            time_diff = m.start_time - now
+            time_diff = round(m.start_at.timestamp()) - now
             before = announce_time_start.total_seconds()
             after = announce_time_end.total_seconds()
             return before <= time_diff <= after
@@ -400,8 +393,8 @@ class MatchCalendarCog(discord.ext.commands.Cog):
 
     async def _match_starting_soon(
         self,
-        match: ScheduledMatch,
-        guild: discord.Guild
+        guild: discord.Guild,
+        match: ScheduledMatch
     ) -> discord.Embed:
         '''
             Creates the embed for a match starting soon announcement
@@ -427,13 +420,10 @@ class MatchCalendarCog(discord.ext.commands.Cog):
             notice_matchup_info_body = group.create_task(
                 self._format_message_template(
                     SchedulingAnnouncementPaths.INCOMING_MATCH_INFO_BODY.value,
-                    team1=guild.get_role(match.team_1_id).mention,
-                    team2=guild.get_role(match.team_2_id).mention,
+                    team1=guild.get_role(match.team1).mention,
+                    team2=guild.get_role(match.team2).mention,
                     time_to_start=discord.utils.format_dt(
-                        datetime.fromtimestamp(
-                            match.start_time,
-                            timezone.utc
-                        ),
+                        match.start_at,
                         style='R'
                     )
                 )

@@ -10,25 +10,24 @@ import asyncio
 from datetime import datetime, timezone, MAXYEAR
 from pathlib import Path
 from typing import List, Optional, Dict, Any
-from enum import Enum
 
-from ...model.rows import (
+from ..model.adts import (
     MatchToSchedule,
     ScheduledMatch,
     MatchToCancel,
     SchedulingEvent,
     SchedulingEventType
 )
-from ...model.runners import MatchlistQueryRunner
-from ...model import CommandSpec, GroupSpec
-from ...exceptions import MatchSchedulerBotException
-from ... import get_config
-from ..autocomplete import autocomplete_timezone
-from ..validators import (
+from ..model.processing import MatchlistQueryRunner
+from ..model.config import CommandSpec, GroupSpec
+from ..exceptions import MSADiscordAppCommandError
+from .. import get_config
+from .autocomplete import autocomplete_timezone
+from .validators import (
     date_in_near_future,
     date_parts
 )
-from ..msgpaths import CoreContentPaths, SchedulingConfirmationPaths
+from .msgpaths import CoreContentPaths, SchedulingConfirmationPaths
 
 import discord
 
@@ -49,8 +48,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
     def __init__(self, bot: discord.ext.commands.Bot) -> None:
         self._bot = bot
         self._scheduler = MatchlistQueryRunner(
-            bot.dbpool,
-            ScheduledMatch.from_sql_row
+            bot.dbpool
         )
         super().__init__(
             name=__SPEC__.group_name,
@@ -84,7 +82,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
                 edit_response=interaction.response.is_done()
             )
         elif isinstance(error, discord.app_commands.CommandInvokeError) and \
-                isinstance(error.original, MatchSchedulerBotException):
+                isinstance(error.original, MSADiscordAppCommandError):
             await self._explain_managed_failure(
                 interaction,
                 error.original,
@@ -155,15 +153,20 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
             minute,
             timezone
         )
-        scheduled = await self._scheduler.schedule_match(
-            MatchToSchedule.with_determistic_team_ordering(
-                round(start_time.timestamp()),
-                team_1.id,
-                team_2.id
+        async with self._scheduler.begin(ScheduledMatch.from_row) as conn:
+            scheduled = await self._scheduler.schedule_match(
+                conn,
+                MatchToSchedule.fixed_order(
+                    team_1.id,
+                    team_2.id,
+                    start_time
+                )
             )
-        )
-        await self._report_new_match_scheduled(interaction, scheduled)
-        await self._publish_match_scheduled_event(scheduled, interaction.guild)
+            await self._report_new_match_scheduled(interaction, scheduled)
+            await self._publish_match_scheduled_event(
+                scheduled,
+                interaction.guild
+            )
 
     @discord.app_commands.command(
         name=__DELETE__.invoke_with,
@@ -200,14 +203,19 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
                 [discord.app_commands.CommandInvokeError]: if match not cancelled
         '''
         await self._acknowledge_command_usage(interaction)
-        cancelled = await self._scheduler.cancel_match(
-            MatchToCancel.with_determistic_team_ordering(
-                team_1.id,
-                team_2.id
+        async with self._scheduler.begin(ScheduledMatch.from_row) as conn:
+            cancelled = await self._scheduler.cancel_match(
+                conn,
+                MatchToCancel.fixed_order(
+                    team_1.id,
+                    team_2.id
+                )
             )
-        )
-        await self._report_match_cancelled(interaction, cancelled)
-        await self._publish_match_cancelled_event(cancelled, interaction.guild)
+            await self._report_match_cancelled(interaction, cancelled)
+            await self._publish_match_cancelled_event(
+                cancelled,
+                interaction.guild
+            )
 
     @discord.app_commands.command(
         name=__READ__.invoke_with,
@@ -215,10 +223,12 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
     )
     async def show_matches(self, interaction: discord.Interaction):
         await self._acknowledge_command_usage(interaction)
-        upcoming = await self._scheduler.find_upcoming_match(
-            round(datetime.now(tz=timezone.utc).timestamp())
-        )
-        await self._report_upcoming_matches(interaction, upcoming)
+        async with self._scheduler.begin(ScheduledMatch.from_row) as conn:
+            upcoming = await self._scheduler.find_upcoming_matches(
+                conn,
+                round(datetime.now(tz=timezone.utc).timestamp())
+            )
+            await self._report_upcoming_matches(interaction, upcoming)
 
     async def _acknowledge_command_usage(
         self,
@@ -276,7 +286,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
                 KeyError: if kwargs does not contain a specified placeholder
                     - This is typically a programming error
         '''
-        content_template = await self._bot.msgcache.get_text(msgpath)
+        content_template = await self._bot.messages.fetch_text(msgpath)
         return content_template.format(**kwargs)
 
     async def _deny_usage(
@@ -341,7 +351,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
         __LOGGER__.debug('Sending forbidden notice as the response')
         if edit_response:
             await interaction.edit_original_response(
-                content=discord.MISSING,
+                content=None,
                 embed=forbidden_notice
             )
         else:
@@ -353,7 +363,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
     async def _explain_managed_failure(
         self,
         interaction: discord.Interaction,
-        exc: MatchSchedulerBotException,
+        exc: MSADiscordAppCommandError,
         edit_response: bool
     ) -> None:
         '''
@@ -361,7 +371,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
 
             Parameters:
                 interaction [discord.Interaction]: command usage context
-                exc [MatchSchedulerBotException]: possibly an anticipated error
+                exc [MatchlistOperationFailure]: possibly an anticipated error
                 edit_response [bool]: False if fresh interaction, otherwise True
 
             Returns:
@@ -393,7 +403,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
             color=self._bot.AccentColor.WARN.value
         ).add_field(
             name=await self._format_message_template(),
-            value=f'**{exc.what}**',
+            value=f'**{exc.reason}**',
             inline=False
         ).add_field(
             name=await self._format_message_template(),
@@ -414,7 +424,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
             )
         __LOGGER__.error(
             'Details of error: %s',
-            exc.what
+            exc.reason
         )
 
     async def _explain_unexpected_failure(
@@ -429,7 +439,7 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
             Parameters:
                 interaction [discord.Interaction]: command usage context
                 exc [Exception]: the unanticipated error
-                edit_response [bool]: False if fresh interaction, otherwise True
+                edit_response [bool]: False if fresh interaction, else True
 
             Returns:
                 None
@@ -557,21 +567,14 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
             team_matchup = group.create_task(
                 self._format_message_template(
                     CoreContentPaths.TEAMS_MATCHUP.value,
-                    team1=interaction.guild.get_role(
-                        new_match.team_1_id).mention,
-                    team2=interaction.guild.get_role(
-                        new_match.team_2_id).mention
+                    team1=interaction.guild.get_role(new_match.team1).mention,
+                    team2=interaction.guild.get_role(new_match.team2).mention
                 )
             )
             matchup_date = group.create_task(
                 self._format_message_template(
                     CoreContentPaths.MATCHUP_DATE.value,
-                    dt=discord.utils.format_dt(
-                        datetime.fromtimestamp(
-                            new_match.start_time,
-                            timezone.utc
-                        )
-                    )
+                    dt=discord.utils.format_dt(new_match.start_at)
                 )
             )
 
@@ -624,20 +627,15 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
                 self._format_message_template(
                     CoreContentPaths.TEAMS_MATCHUP.value,
                     team1=interaction.guild.get_role(
-                        cancelled_match.team_1_id).mention,
+                        cancelled_match.team1).mention,
                     team2=interaction.guild.get_role(
-                        cancelled_match.team_2_id).mention
+                        cancelled_match.team2).mention
                 )
             )
             matchup_date = group.create_task(
                 self._format_message_template(
                     CoreContentPaths.MATCHUP_DATE.value,
-                    dt=discord.utils.format_dt(
-                        datetime.fromtimestamp(
-                            cancelled_match.start_time,
-                            timezone.utc
-                        )
-                    )
+                    dt=discord.utils.format_dt(cancelled_match.start_at)
                 )
             )
 
@@ -694,14 +692,9 @@ class MatchSchedulingCommandGroup(discord.app_commands.Group):
             notice_details = await asyncio.gather(*[
                 self._format_message_template(
                     SchedulingConfirmationPaths.MATCH_CALENDAR_SOME.value,
-                    team1=interaction.guild.get_role(m.team_1_id).mention,
-                    team2=interaction.guild.get_role(m.team_2_id).mention,
-                    kickoff_at=discord.utils.format_dt(
-                        datetime.fromtimestamp(
-                            m.start_time,
-                            timezone.utc
-                        )
-                    )
+                    team1=interaction.guild.get_role(m.team1).mention,
+                    team2=interaction.guild.get_role(m.team2).mention,
+                    kickoff_at=discord.utils.format_dt(m.start_at)
                 )
                 for m in matches]
             ) if matches else await self._format_message_template(

@@ -68,7 +68,7 @@ class AsyncConnectionPool:
                 aiosqlite.Connection -> borrowed database connection
         '''
         __LOGGER__.info('Retrieving the next available connection')
-        conn = await self._get_or_make_conn(row_factory)
+        conn = await self._get_or_make_conn()
         __LOGGER__.debug(
             'Setting connection\'s row factory to %s',
             str(row_factory)
@@ -91,10 +91,11 @@ class AsyncConnectionPool:
             'Returning borrowed connection to the pool: %s',
             str(conn)
         )
+        conn.row_factory = aiosqlite.Row
         await self._pool.put(conn)
 
     async def _get_or_make_conn(
-        self,
+        self
     ) -> aiosqlite.Connection:
         '''
             Get a connection from the pool if available.

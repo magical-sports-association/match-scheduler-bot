@@ -119,16 +119,16 @@ class MagicalSportsApplicationBot(commands.Bot):
         '''
 
         __LOGGER__.info(
-            'Loading extension: `match_scheduler_bot.bot.extensions.scheduling`'
+            'Loading extension: `msadiscordapp.toolkit.scheduling`'
         )
         await self.load_extension(
-            name='match_scheduler_bot.bot.extensions.scheduling'
+            name='msadiscordapp.toolkit.scheduling'
         )
         __LOGGER__.info(
-            'Loading extension: `match_scheduler_bot.bot.extensions.calendar`'
+            'Loading extension: `msadiscordapp.toolkit.calendar`'
         )
         await self.load_extension(
-            name='match_scheduler_bot.bot.extensions.calendar'
+            name='msadiscordapp.toolkit.calendar'
         )
 
         __LOGGER__.info('Syncing command tree')

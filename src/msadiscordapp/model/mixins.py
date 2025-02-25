@@ -57,15 +57,16 @@ class TransactionalMixin:
         conn: Optional[aiosqlite.Connection] = None
         try:
             __LOGGER__.debug('Requesting connection from the pool')
-            conn = self._pool.acquire(row_factory)
+            conn = await self._pool.acquire(row_factory)
             __LOGGER__.debug('Acquired connection from the pool')
             yield conn
-        except aiosqlite.Error as err:
+        except Exception as err:
             __LOGGER__.debug(
                 'Rolling back because a problem occurred in the transaction'
             )
             await conn.rollback()
             __LOGGER__.error('Reason: %s', str(err))
+            raise
         else:
             __LOGGER__.debug(
                 'Transaction concluded without a problem'
@@ -73,4 +74,5 @@ class TransactionalMixin:
             await conn.commit()
         finally:
             __LOGGER__.debug('Returning borrowed connection')
-            await self._pool.release(conn)
+            if conn:
+                await self._pool.release(conn)
